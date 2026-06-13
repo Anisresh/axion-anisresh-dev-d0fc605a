@@ -20,16 +20,18 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   usePaletteSync();
   return (
-    <div className="min-h-screen flex bg-background">
-      <MiniSidebar />
-      <TopBar />
-      <div className="flex-1 ml-[92px] flex flex-col min-h-screen">
-        <main className="flex-1 pt-16">
-          <Outlet />
-        </main>
-        <Footer />
+    <GlobalPlayerProvider>
+      <div className="min-h-screen flex bg-background">
+        <MiniSidebar />
+        <TopBar />
+        <div className="flex-1 ml-[92px] flex flex-col min-h-screen">
+          <main className="flex-1 pt-16">
+            <Outlet />
+          </main>
+          <Footer />
+        </div>
+        <LofiPlayer />
       </div>
-      <LofiPlayer />
-    </div>
+    </GlobalPlayerProvider>
   );
 }
