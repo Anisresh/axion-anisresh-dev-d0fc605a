@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MiniSidebar } from "@/components/MiniSidebar";
 import { Footer } from "@/components/Footer";
 import { LofiPlayer } from "@/components/LofiPlayer";
+import { GlobalPlayerProvider } from "@/components/GlobalPlayer";
 import { TopBar } from "@/components/TopBar";
 import { usePaletteSync } from "@/lib/usePalette";
 
