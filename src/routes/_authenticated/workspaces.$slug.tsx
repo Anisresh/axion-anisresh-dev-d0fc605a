@@ -1045,41 +1045,68 @@ function PlaylistsTab({ ws, me }: TabProps) {
     setItems(data ?? []);
   }
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [ws.id]);
+  function detect(url: string): { kind: "spotify" | "youtube"; embed: string } | null {
+    const s = url.match(/spotify\.com\/(playlist|album|track|artist|episode|show)\/([a-zA-Z0-9]+)/);
+    if (s) return { kind: "spotify", embed: `https://open.spotify.com/embed/${s[1]}/${s[2]}` };
+    // YouTube / YouTube Music — playlist
+    const pl = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+    if (pl && /(youtube\.com|youtu\.be|music\.youtube\.com)/.test(url)) {
+      return { kind: "youtube", embed: `https://www.youtube.com/embed/videoseries?list=${pl[1]}` };
+    }
+    // YouTube / YouTube Music — single video
+    const v =
+      url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) ||
+      url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (v && /(youtube\.com|youtu\.be|music\.youtube\.com)/.test(url)) {
+      return { kind: "youtube", embed: `https://www.youtube.com/embed/${v[1]}` };
+    }
+    return null;
+  }
   async function add(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.spotify_url.includes("spotify.com")) return toast.error("Paste a Spotify URL");
+    if (!detect(form.spotify_url)) return toast.error("Paste a Spotify, YouTube or YouTube Music URL");
     const { error } = await supabase.from("workspace_playlists").insert({ workspace_id: ws.id, ...form, added_by: me });
     if (error) return toast.error(error.message);
     setForm({ title: "", spotify_url: "" }); void load();
   }
   async function remove(id: string) { await supabase.from("workspace_playlists").delete().eq("id", id); void load(); }
-  function embedUrl(url: string) {
-    const m = url.match(/spotify\.com\/(playlist|album|track|artist|episode|show)\/([a-zA-Z0-9]+)/);
-    if (!m) return null;
-    return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
-  }
   return (
     <div className="space-y-4">
       <Card>
         <form onSubmit={add} className="flex flex-wrap gap-2">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="h-11 px-4 rounded-xl bg-input/60 border border-border text-sm w-40" />
-          <input value={form.spotify_url} onChange={(e) => setForm({ ...form, spotify_url: e.target.value })} placeholder="https://open.spotify.com/playlist/…" className="flex-1 min-w-[220px] h-11 px-4 rounded-xl bg-input/60 border border-border text-sm" />
+          <input value={form.spotify_url} onChange={(e) => setForm({ ...form, spotify_url: e.target.value })} placeholder="Spotify, YouTube or YouTube Music URL" className="flex-1 min-w-[220px] h-11 px-4 rounded-xl bg-input/60 border border-border text-sm" />
           <button type="submit" className="h-11 px-4 rounded-xl bg-primary-gradient text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5"><Music className="size-4" /> Add</button>
         </form>
+        <p className="mt-2 text-[11px] text-muted-foreground">Supports Spotify, YouTube and YouTube Music links.</p>
       </Card>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {items.map((p) => (
-          <Card key={p.id} className="p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="font-medium text-sm truncate">{p.title || "Playlist"}</div>
-              {p.added_by === me && <button onClick={() => remove(p.id)} className="p-1 rounded hover:bg-muted text-destructive"><Trash2 className="size-3.5" /></button>}
-            </div>
-            {embedUrl(p.spotify_url) ? (
-              <iframe src={embedUrl(p.spotify_url)!} width="100%" height="152" frameBorder="0" allow="encrypted-media" className="rounded-xl" />
-            ) : <a href={p.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Open in Spotify</a>}
-          </Card>
-        ))}
-        {items.length === 0 && <p className="text-sm text-muted-foreground">No playlists yet. Paste a Spotify link above.</p>}
+        {items.map((p) => {
+          const d = detect(p.spotify_url);
+          return (
+            <Card key={p.id} className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-medium text-sm truncate flex items-center gap-2">
+                  {d && <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{d.kind === "youtube" ? "YouTube" : "Spotify"}</span>}
+                  <span className="truncate">{p.title || "Playlist"}</span>
+                </div>
+                {p.added_by === me && <button onClick={() => remove(p.id)} className="p-1 rounded hover:bg-muted text-destructive"><Trash2 className="size-3.5" /></button>}
+              </div>
+              {d ? (
+                <iframe
+                  src={d.embed}
+                  width="100%"
+                  height={d.kind === "youtube" ? 200 : 152}
+                  frameBorder="0"
+                  allow="encrypted-media; autoplay; clipboard-write; picture-in-picture"
+                  allowFullScreen
+                  className="rounded-xl"
+                />
+              ) : <a href={p.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Open link</a>}
+            </Card>
+          );
+        })}
+        {items.length === 0 && <p className="text-sm text-muted-foreground">No playlists yet. Paste a Spotify or YouTube link above.</p>}
       </div>
     </div>
   );
