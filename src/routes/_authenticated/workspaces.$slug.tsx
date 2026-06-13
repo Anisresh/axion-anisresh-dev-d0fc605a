@@ -1040,6 +1040,7 @@ function BirthdaysTab({ ws, me }: TabProps) {
 function PlaylistsTab({ ws, me }: TabProps) {
   const [items, setItems] = useState<any[]>([]);
   const [form, setForm] = useState({ title: "", spotify_url: "" });
+  const player = useGlobalPlayer();
   async function load() {
     const { data } = await supabase.from("workspace_playlists").select("*").eq("workspace_id", ws.id).order("created_at", { ascending: false });
     setItems(data ?? []);
@@ -1048,17 +1049,15 @@ function PlaylistsTab({ ws, me }: TabProps) {
   function detect(url: string): { kind: "spotify" | "youtube"; embed: string } | null {
     const s = url.match(/spotify\.com\/(playlist|album|track|artist|episode|show)\/([a-zA-Z0-9]+)/);
     if (s) return { kind: "spotify", embed: `https://open.spotify.com/embed/${s[1]}/${s[2]}` };
-    // YouTube / YouTube Music — playlist
     const pl = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
     if (pl && /(youtube\.com|youtu\.be|music\.youtube\.com)/.test(url)) {
-      return { kind: "youtube", embed: `https://www.youtube.com/embed/videoseries?list=${pl[1]}` };
+      return { kind: "youtube", embed: `https://www.youtube.com/embed/videoseries?list=${pl[1]}?autoplay=1` };
     }
-    // YouTube / YouTube Music — single video
     const v =
       url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) ||
       url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
     if (v && /(youtube\.com|youtu\.be|music\.youtube\.com)/.test(url)) {
-      return { kind: "youtube", embed: `https://www.youtube.com/embed/${v[1]}` };
+      return { kind: "youtube", embed: `https://www.youtube.com/embed/${v[1]}?autoplay=1` };
     }
     return null;
   }
@@ -1078,30 +1077,42 @@ function PlaylistsTab({ ws, me }: TabProps) {
           <input value={form.spotify_url} onChange={(e) => setForm({ ...form, spotify_url: e.target.value })} placeholder="Spotify, YouTube or YouTube Music URL" className="flex-1 min-w-[220px] h-11 px-4 rounded-xl bg-input/60 border border-border text-sm" />
           <button type="submit" className="h-11 px-4 rounded-xl bg-primary-gradient text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5"><Music className="size-4" /> Add</button>
         </form>
-        <p className="mt-2 text-[11px] text-muted-foreground">Supports Spotify, YouTube and YouTube Music links.</p>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Press Play to start a track — it keeps playing as you switch sections. Hide the video to listen audio-only.
+        </p>
       </Card>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.map((p) => {
           const d = detect(p.spotify_url);
+          const isActive = player.track?.id === p.id;
           return (
             <Card key={p.id} className="p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-medium text-sm truncate flex items-center gap-2">
-                  {d && <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{d.kind === "youtube" ? "YouTube" : "Spotify"}</span>}
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <div className="font-medium text-sm truncate flex items-center gap-2 min-w-0">
+                  {d && <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{d.kind === "youtube" ? "YouTube" : "Spotify"}</span>}
                   <span className="truncate">{p.title || "Playlist"}</span>
+                  {isActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">Playing</span>}
                 </div>
                 {p.added_by === me && <button onClick={() => remove(p.id)} className="p-1 rounded hover:bg-muted text-destructive"><Trash2 className="size-3.5" /></button>}
               </div>
               {d ? (
-                <iframe
-                  src={d.embed}
-                  width="100%"
-                  height={d.kind === "youtube" ? 200 : 152}
-                  frameBorder="0"
-                  allow="encrypted-media; autoplay; clipboard-write; picture-in-picture"
-                  allowFullScreen
-                  className="rounded-xl"
-                />
+                <div className="flex items-center gap-2">
+                  {isActive ? (
+                    <button onClick={() => player.stop()} className="h-9 px-3 rounded-xl bg-muted text-foreground text-xs font-medium inline-flex items-center gap-1.5">
+                      <X className="size-3.5" /> Stop
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => player.play({ id: p.id, title: p.title || "Playlist", kind: d.kind, embed: d.embed })}
+                      className="h-9 px-3 rounded-xl bg-primary-gradient text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 shadow-glow"
+                    >
+                      <Music className="size-3.5" /> Play
+                    </button>
+                  )}
+                  <a href={p.spotify_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-foreground underline">
+                    Open original
+                  </a>
+                </div>
               ) : <a href={p.spotify_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Open link</a>}
             </Card>
           );
