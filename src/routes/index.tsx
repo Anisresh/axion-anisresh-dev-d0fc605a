@@ -4,6 +4,7 @@ import { Sparkles, MessageCircle, GraduationCap, Timer, Shield, ArrowRight } fro
 import { Footer } from "@/components/Footer";
 import { LandingExtras } from "@/components/LandingExtras";
 import { WorkspaceShowcase } from "@/components/WorkspaceShowcase";
+import { Donate } from "@/components/Donate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
