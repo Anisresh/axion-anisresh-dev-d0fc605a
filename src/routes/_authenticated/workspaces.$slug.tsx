@@ -777,69 +777,178 @@ function ExpensesTab({ ws, me, members }: TabProps) {
 }
 
 /* ---------- Whiteboard ---------- */
+type Stroke = { x1: number; y1: number; x2: number; y2: number; c: string; w?: number; t?: "pen" | "eraser" };
 function WhiteboardTab({ ws, me }: TabProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
   const [color, setColor] = useState("#3B82F6");
+  const [tool, setTool] = useState<"pen" | "eraser" | "laser">("pen");
+  const [lasers, setLasers] = useState<Record<string, { x: number; y: number; t: number; color: string }>>({});
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  function draw(x1: number, y1: number, x2: number, y2: number, col: string) {
+  function drawSegment(s: Stroke) {
     const ctx = canvasRef.current?.getContext("2d"); if (!ctx) return;
-    ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    if (s.t === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.strokeStyle = "rgba(0,0,0,1)";
+      ctx.lineWidth = s.w ?? 20;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = s.c;
+      ctx.lineWidth = s.w ?? 2.5;
+    }
+    ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
+    ctx.globalCompositeOperation = "source-over";
   }
 
   async function loadStrokes() {
     const ctx = canvasRef.current?.getContext("2d");
     if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     const { data } = await supabase.from("workspace_whiteboard_strokes").select("*").eq("workspace_id", ws.id).order("created_at");
-    (data ?? []).forEach((s: any) => {
-      const d = s.data as any; draw(d.x1, d.y1, d.x2, d.y2, d.c);
-    });
+    (data ?? []).forEach((s: any) => drawSegment(s.data as Stroke));
   }
   useEffect(() => { void loadStrokes(); /* eslint-disable-next-line */ }, [ws.id]);
+
+  // Realtime: strokes + laser pointer broadcasts
   useEffect(() => {
-    const ch = supabase.channel(`wb:${ws.id}`)
+    const ch = supabase.channel(`wb:${ws.id}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "workspace_whiteboard_strokes", filter: `workspace_id=eq.${ws.id}` },
-        (p) => { const d = (p.new as any).data; if ((p.new as any).user_id !== me) draw(d.x1, d.y1, d.x2, d.y2, d.c); })
+        (p) => { const row = p.new as any; if (row.user_id !== me) drawSegment(row.data as Stroke); })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "workspace_whiteboard_strokes", filter: `workspace_id=eq.${ws.id}` },
+        () => loadStrokes())
+      .on("broadcast", { event: "laser" }, ({ payload }) => {
+        const { userId, x, y, color: lc } = payload as { userId: string; x: number; y: number; color: string };
+        if (userId === me) return;
+        setLasers((prev) => ({ ...prev, [userId]: { x, y, t: Date.now(), color: lc } }));
+      })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    channelRef.current = ch;
+    return () => { supabase.removeChannel(ch); channelRef.current = null; };
+    // eslint-disable-next-line
   }, [ws.id, me]);
+
+  // Auto-expire laser dots after 5 seconds
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = Date.now();
+      setLasers((prev) => {
+        const next: typeof prev = {};
+        for (const [k, v] of Object.entries(prev)) if (now - v.t < 5000) next[k] = v;
+        return next;
+      });
+    }, 200);
+    return () => clearInterval(id);
+  }, []);
+
+  // Render laser dots on overlay
+  useEffect(() => {
+    const c = overlayRef.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    ctx.clearRect(0, 0, c.width, c.height);
+    const now = Date.now();
+    for (const v of Object.values(lasers)) {
+      const age = (now - v.t) / 5000;
+      const alpha = Math.max(0, 1 - age);
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = v.color + Math.round(alpha * 200).toString(16).padStart(2, "0");
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, 14, 0, Math.PI * 2);
+      ctx.strokeStyle = v.color + Math.round(alpha * 120).toString(16).padStart(2, "0");
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }, [lasers]);
 
   function pos(e: React.PointerEvent) {
     const r = canvasRef.current!.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    const sx = canvasRef.current!.width / r.width;
+    const sy = canvasRef.current!.height / r.height;
+    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
   }
-  function onDown(e: React.PointerEvent) { drawing.current = true; lastPt.current = pos(e); }
+
+  function onDown(e: React.PointerEvent) {
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    if (tool === "laser") return;
+    drawing.current = true;
+    lastPt.current = pos(e);
+  }
   function onMove(e: React.PointerEvent) {
+    const p = pos(e);
+    if (tool === "laser") {
+      // Show own laser locally + broadcast
+      setLasers((prev) => ({ ...prev, [me]: { x: p.x, y: p.y, t: Date.now(), color } }));
+      channelRef.current?.send({ type: "broadcast", event: "laser", payload: { userId: me, x: p.x, y: p.y, color } });
+      return;
+    }
     if (!drawing.current || !lastPt.current) return;
-    const p = pos(e); const last = lastPt.current;
-    draw(last.x, last.y, p.x, p.y, color);
-    void supabase.from("workspace_whiteboard_strokes").insert({
-      workspace_id: ws.id, user_id: me, data: { x1: last.x, y1: last.y, x2: p.x, y2: p.y, c: color },
-    });
+    const last = lastPt.current;
+    const stroke: Stroke = tool === "eraser"
+      ? { x1: last.x, y1: last.y, x2: p.x, y2: p.y, c: "#000", w: 24, t: "eraser" }
+      : { x1: last.x, y1: last.y, x2: p.x, y2: p.y, c: color, w: 2.5, t: "pen" };
+    drawSegment(stroke);
+    void supabase.from("workspace_whiteboard_strokes").insert({ workspace_id: ws.id, user_id: me, data: stroke });
     lastPt.current = p;
   }
   function onUp() { drawing.current = false; lastPt.current = null; }
+
   async function clearAll() {
     if (!confirm("Clear the whiteboard for everyone?")) return;
     await supabase.from("workspace_whiteboard_strokes").delete().eq("workspace_id", ws.id);
     void loadStrokes();
   }
 
+  function saveAsImage() {
+    const c = canvasRef.current; if (!c) return;
+    // Composite over a solid background so the saved PNG isn't transparent
+    const out = document.createElement("canvas");
+    out.width = c.width; out.height = c.height;
+    const octx = out.getContext("2d")!;
+    octx.fillStyle = getComputedStyle(document.body).backgroundColor || "#ffffff";
+    octx.fillRect(0, 0, out.width, out.height);
+    octx.drawImage(c, 0, 0);
+    const url = out.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${ws.slug}-whiteboard-${new Date().toISOString().slice(0, 10)}.png`;
+    a.click();
+    toast.success("Whiteboard saved");
+  }
+
+  const cursorClass = tool === "laser" ? "cursor-pointer" : tool === "eraser" ? "cursor-cell" : "cursor-crosshair";
+
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="p-3 border-b border-border/60 flex items-center justify-between">
+      <div className="p-3 border-b border-border/60 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          {["#3B82F6","#EF4444","#10B981","#F59E0B","#A855F7","#0F172A","#F8FAFC"].map((c) => (
-            <button key={c} onClick={() => setColor(c)} className={`size-6 rounded-full border-2 ${color === c ? "border-primary" : "border-transparent"}`} style={{ background: c }} />
-          ))}
+          <div className="inline-flex p-1 rounded-xl bg-muted/60">
+            <button onClick={() => setTool("pen")} className={`px-3 h-8 rounded-lg inline-flex items-center gap-1.5 text-xs font-medium ${tool === "pen" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><Pencil className="size-3.5" /> Pen</button>
+            <button onClick={() => setTool("eraser")} className={`px-3 h-8 rounded-lg inline-flex items-center gap-1.5 text-xs font-medium ${tool === "eraser" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><Eraser className="size-3.5" /> Eraser</button>
+            <button onClick={() => setTool("laser")} className={`px-3 h-8 rounded-lg inline-flex items-center gap-1.5 text-xs font-medium ${tool === "laser" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><MousePointer2 className="size-3.5" /> Laser</button>
+          </div>
+          <div className="flex items-center gap-1.5 pl-2 border-l border-border/60">
+            {["#3B82F6","#EF4444","#10B981","#F59E0B","#A855F7","#0F172A","#F8FAFC"].map((c) => (
+              <button key={c} onClick={() => setColor(c)} title={c}
+                className={`size-6 rounded-full border-2 ${color === c ? "border-primary" : "border-transparent"}`} style={{ background: c }} />
+            ))}
+          </div>
         </div>
-        <button onClick={clearAll} className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted inline-flex items-center gap-1.5"><Eraser className="size-3.5" /> Clear</button>
+        <div className="flex items-center gap-1">
+          <button onClick={saveAsImage} className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted inline-flex items-center gap-1.5"><Save className="size-3.5" /> Save</button>
+          <button onClick={clearAll} className="h-8 px-3 rounded-lg text-xs font-medium hover:bg-muted text-destructive inline-flex items-center gap-1.5"><Trash2 className="size-3.5" /> Clear</button>
+        </div>
       </div>
-      <canvas ref={canvasRef} width={900} height={500}
-        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}
-        className="block w-full bg-background cursor-crosshair touch-none" />
+      <div className="relative">
+        <canvas ref={canvasRef} width={900} height={500}
+          onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}
+          className={`block w-full bg-background touch-none ${cursorClass}`} />
+        <canvas ref={overlayRef} width={900} height={500}
+          className="pointer-events-none absolute inset-0 block w-full" />
+      </div>
     </Card>
   );
 }
