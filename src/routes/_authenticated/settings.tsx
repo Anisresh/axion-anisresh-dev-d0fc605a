@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Save, Upload, Sun, Moon, Loader2, Palette, Check, Building2, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { PALETTES, applyPalette } from "@/lib/usePalette";
+import { Donate } from "@/components/Donate";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings · Axion6" }] }),
@@ -180,6 +181,10 @@ function SettingsPage() {
           </section>
         </>
       )}
+
+      <section className="mt-6">
+        <Donate compact />
+      </section>
     </div>
   );
 }

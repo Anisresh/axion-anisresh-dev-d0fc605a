@@ -4,6 +4,7 @@ import { Sparkles, MessageCircle, GraduationCap, Timer, Shield, ArrowRight } fro
 import { Footer } from "@/components/Footer";
 import { LandingExtras } from "@/components/LandingExtras";
 import { WorkspaceShowcase } from "@/components/WorkspaceShowcase";
+import { Donate } from "@/components/Donate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -109,6 +110,9 @@ export default function Landing() {
 
       <WorkspaceShowcase />
       <LandingExtras />
+      <section className="px-6 md:px-10 pb-24 max-w-5xl mx-auto w-full">
+        <Donate />
+      </section>
       <Footer />
     </div>
   );

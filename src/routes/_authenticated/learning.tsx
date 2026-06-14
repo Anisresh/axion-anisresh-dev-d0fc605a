@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { learningGenerate } from "@/lib/xai.functions";
-import { Upload, Loader2, BookOpen, Sparkles, Check, X } from "lucide-react";
+import { Upload, Loader2, BookOpen, Sparkles, Check, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/learning")({
@@ -99,10 +99,25 @@ function LearningPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Your sets</h2>
           <ul className="space-y-1 max-h-[420px] overflow-y-auto">
             {sessions.map((s) => (
-              <li key={s.id}>
-                <button onClick={() => setActive(s)} className={`w-full text-left p-2.5 rounded-2xl transition-soft ${active?.id === s.id ? "bg-primary/10 text-primary" : "hover:bg-muted/60"}`}>
+              <li key={s.id} className="group flex items-center gap-1">
+                <button onClick={() => setActive(s)} className={`flex-1 text-left p-2.5 rounded-2xl transition-soft min-w-0 ${active?.id === s.id ? "bg-primary/10 text-primary" : "hover:bg-muted/60"}`}>
                   <div className="text-sm font-medium truncate">{s.title}</div>
                   <div className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString()}</div>
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!confirm(`Delete study set "${s.title}"?`)) return;
+                    const { error } = await supabase.from("learning_sessions").delete().eq("id", s.id);
+                    if (error) { toast.error(error.message); return; }
+                    if (active?.id === s.id) setActive(null);
+                    await load();
+                    toast.success("Study set deleted");
+                  }}
+                  title="Delete study set"
+                  className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted opacity-0 group-hover:opacity-100 transition-soft"
+                >
+                  <Trash2 className="size-3.5" />
                 </button>
               </li>
             ))}
