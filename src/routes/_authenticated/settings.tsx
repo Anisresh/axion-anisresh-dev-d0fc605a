@@ -181,6 +181,10 @@ function SettingsPage() {
           </section>
         </>
       )}
+
+      <section className="mt-6">
+        <Donate compact />
+      </section>
     </div>
   );
 }
