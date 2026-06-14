@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { learningGenerate } from "@/lib/xai.functions";
-import { Upload, Loader2, BookOpen, Sparkles, Check, X } from "lucide-react";
+import { Upload, Loader2, BookOpen, Sparkles, Check, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/learning")({
