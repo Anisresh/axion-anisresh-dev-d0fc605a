@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { xaiChat } from "@/lib/xai.functions";
-import { Send, Sparkles, Plus, Loader2, Zap, Brain } from "lucide-react";
+import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
