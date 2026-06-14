@@ -110,6 +110,9 @@ export default function Landing() {
 
       <WorkspaceShowcase />
       <LandingExtras />
+      <section className="px-6 md:px-10 pb-24 max-w-5xl mx-auto w-full">
+        <Donate />
+      </section>
       <Footer />
     </div>
   );
