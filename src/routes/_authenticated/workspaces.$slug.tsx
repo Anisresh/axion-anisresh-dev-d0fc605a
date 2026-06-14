@@ -954,24 +954,70 @@ function WhiteboardTab({ ws, me }: TabProps) {
 }
 
 /* ---------- Members ---------- */
-function MembersTab({ members }: TabProps) {
+function MembersTab({ ws, members, me }: TabProps) {
+  const navigate = useNavigate();
+  const myRow = members.find((m) => m.user_id === me);
+  const isOwner = ws.owner_id === me || myRow?.role === "owner";
+
+  async function leave() {
+    if (isOwner) { toast.error("Owners can't leave — delete the workspace instead, or transfer ownership."); return; }
+    if (!confirm(`Leave "${ws.name}"? You'll lose access until invited back.`)) return;
+    const { error } = await supabase.from("workspace_members").delete().eq("workspace_id", ws.id).eq("user_id", me);
+    if (error) { toast.error(error.message); return; }
+    toast.success("You've left the workspace");
+    navigate({ to: "/workspaces" });
+  }
+
+  async function destroy() {
+    if (!isOwner) return;
+    const confirmText = prompt(`This permanently deletes "${ws.name}" and all its data for everyone.\n\nType the workspace name to confirm:`);
+    if (confirmText !== ws.name) { if (confirmText !== null) toast.error("Name didn't match — cancelled"); return; }
+    const { error } = await supabase.from("workspaces").delete().eq("id", ws.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Workspace deleted");
+    navigate({ to: "/workspaces" });
+  }
+
   return (
-    <Card>
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold tracking-tight">Members ({members.length})</h3>
-        <button className="h-9 px-3 rounded-xl bg-primary-gradient text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5" onClick={() => toast.info("Share the join link from the top-right.")}>
-          <UserPlus className="size-3.5" /> Invite
-        </button>
-      </div>
-      <ul className="mt-4 divide-y divide-border/60">
-        {members.map((m) => (
-          <li key={m.id} className="py-3 flex items-center justify-between">
-            <div className="text-sm font-mono">{m.user_id.slice(0, 8)}…</div>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize">{m.role}</span>
-          </li>
-        ))}
-      </ul>
-    </Card>
+    <div className="space-y-4">
+      <Card>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold tracking-tight">Members ({members.length})</h3>
+          <button className="h-9 px-3 rounded-xl bg-primary-gradient text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5" onClick={() => toast.info("Share the join link from the top-right.")}>
+            <UserPlus className="size-3.5" /> Invite
+          </button>
+        </div>
+        <ul className="mt-4 divide-y divide-border/60">
+          {members.map((m) => (
+            <li key={m.id} className="py-3 flex items-center justify-between">
+              <div className="text-sm font-mono">{m.user_id.slice(0, 8)}…{m.user_id === me && <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">you</span>}</div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize">{m.role}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      <Card className="border-destructive/30">
+        <h3 className="font-semibold tracking-tight text-destructive">Danger zone</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isOwner
+            ? "You're the owner. Deleting the workspace removes it for everyone, permanently."
+            : "Leave this workspace any time. You can rejoin later if invited."}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {!isOwner && (
+            <button onClick={leave} className="h-10 px-4 rounded-xl border border-border/60 text-sm font-medium hover:bg-muted inline-flex items-center gap-1.5">
+              <LogOut className="size-4" /> Leave workspace
+            </button>
+          )}
+          {isOwner && (
+            <button onClick={destroy} className="h-10 px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5">
+              <Trash2 className="size-4" /> Delete workspace
+            </button>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }
 
