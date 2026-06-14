@@ -67,9 +67,25 @@ function XaiPage() {
         <h2 className="mt-6 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">History</h2>
         <ul className="space-y-1">
           {convs.map((c) => (
-            <li key={c.id}>
-              <button onClick={() => setActive(c.id)} className={`w-full text-left p-2.5 rounded-2xl transition-soft text-sm truncate ${active === c.id ? "bg-primary/10 text-primary" : "hover:bg-muted/60"}`}>
+            <li key={c.id} className="group flex items-center gap-1">
+              <button onClick={() => setActive(c.id)} className={`flex-1 text-left p-2.5 rounded-2xl transition-soft text-sm truncate ${active === c.id ? "bg-primary/10 text-primary" : "hover:bg-muted/60"}`}>
                 {c.title}
+              </button>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!confirm(`Delete "${c.title}"? This can't be undone.`)) return;
+                  await supabase.from("ai_messages").delete().eq("conversation_id", c.id);
+                  const { error } = await supabase.from("ai_conversations").delete().eq("id", c.id);
+                  if (error) { toast.error(error.message); return; }
+                  if (active === c.id) { setActive(null); setMessages([]); }
+                  loadConvs();
+                  toast.success("Chat deleted");
+                }}
+                title="Delete chat"
+                className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted opacity-0 group-hover:opacity-100 transition-soft"
+              >
+                <Trash2 className="size-3.5" />
               </button>
             </li>
           ))}
