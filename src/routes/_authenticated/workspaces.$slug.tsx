@@ -267,6 +267,16 @@ function ChatTab({ ws, me }: TabProps) {
   }
   useEffect(() => { void loadChannels(); /* eslint-disable-next-line */ }, [ws.id]);
 
+  // Realtime: new channels show up live for everyone
+  useEffect(() => {
+    const ch = supabase.channel(`channels:${ws.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "workspace_channels", filter: `workspace_id=eq.${ws.id}` },
+        () => loadChannels())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line
+  }, [ws.id]);
+
   useEffect(() => {
     if (!active) return;
     void (async () => {
