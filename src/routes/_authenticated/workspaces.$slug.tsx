@@ -6,7 +6,7 @@ import {
   GraduationCap, BookOpen, ClipboardCheck, Wallet, FolderKanban, Megaphone, Brain,
   ArrowLeft, Lock, Globe, UserPlus, BarChart3, Briefcase, Heart, CheckSquare,
   Plus, Send, Trash2, Download, Upload, Hash, X, Eraser, StickyNote, Cake, Music,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Pencil, MousePointer2, LogOut, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
