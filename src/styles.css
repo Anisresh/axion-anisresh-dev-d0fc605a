@@ -212,6 +212,54 @@
 .dark[data-palette="sunset"]   { --primary: oklch(0.72 0.15 25); --ring: oklch(0.62 0.13 25); --glow: oklch(0.55 0.16 25); --gradient-primary: linear-gradient(135deg, oklch(0.65 0.17 25), oklch(0.70 0.15 350)); --shadow-glow: 0 10px 40px oklch(0.62 0.17 25 / 0.30); }
 .dark[data-palette="rose"]     { --primary: oklch(0.72 0.14 350); --ring: oklch(0.62 0.13 350); --glow: oklch(0.55 0.14 350); --gradient-primary: linear-gradient(135deg, oklch(0.62 0.16 350), oklch(0.68 0.14 20)); --shadow-glow: 0 10px 40px oklch(0.60 0.16 350 / 0.30); }
 
+/* Additional palettes (work in both light + dark) */
+[data-palette="forest"]   { --primary: oklch(0.55 0.12 145); --ring: oklch(0.68 0.10 145); --accent: oklch(0.90 0.06 140); --glow: oklch(0.60 0.12 145); --gradient-primary: linear-gradient(135deg, oklch(0.55 0.12 145), oklch(0.45 0.10 165)); --shadow-glow: 0 10px 40px oklch(0.55 0.12 145 / 0.28); }
+[data-palette="midnight"] { --primary: oklch(0.60 0.14 265); --ring: oklch(0.68 0.12 265); --accent: oklch(0.88 0.06 260); --glow: oklch(0.55 0.15 265); --gradient-primary: linear-gradient(135deg, oklch(0.55 0.15 265), oklch(0.40 0.12 290)); --shadow-glow: 0 10px 40px oklch(0.55 0.15 265 / 0.30); }
+[data-palette="coral"]    { --primary: oklch(0.66 0.18 20); --ring: oklch(0.74 0.14 20); --accent: oklch(0.90 0.08 25); --glow: oklch(0.72 0.17 15); --gradient-primary: linear-gradient(135deg, oklch(0.66 0.18 20), oklch(0.72 0.14 45)); --shadow-glow: 0 10px 40px oklch(0.66 0.18 20 / 0.28); }
+[data-palette="mint"]     { --primary: oklch(0.68 0.14 170); --ring: oklch(0.74 0.11 170); --accent: oklch(0.90 0.07 170); --glow: oklch(0.72 0.13 170); --gradient-primary: linear-gradient(135deg, oklch(0.68 0.14 170), oklch(0.62 0.12 195)); --shadow-glow: 0 10px 40px oklch(0.68 0.14 170 / 0.28); }
+[data-palette="amber"]    { --primary: oklch(0.72 0.15 70); --ring: oklch(0.78 0.12 70); --accent: oklch(0.90 0.08 75); --glow: oklch(0.75 0.15 65); --gradient-primary: linear-gradient(135deg, oklch(0.72 0.15 70), oklch(0.68 0.16 45)); --shadow-glow: 0 10px 40px oklch(0.72 0.15 70 / 0.28); }
+[data-palette="violet"]   { --primary: oklch(0.58 0.20 300); --ring: oklch(0.70 0.16 300); --accent: oklch(0.90 0.08 300); --glow: oklch(0.60 0.20 300); --gradient-primary: linear-gradient(135deg, oklch(0.58 0.20 300), oklch(0.66 0.16 330)); --shadow-glow: 0 10px 40px oklch(0.58 0.20 300 / 0.30); }
+
+/* ============ BACKGROUND IMAGE + GLASSMORPHISM ============ */
+html.has-bg body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--app-bg-url);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+html.has-bg body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in oklab, var(--color-background) 45%, transparent);
+  backdrop-filter: blur(2px);
+}
+html.has-bg body { background-color: transparent !important; }
+html.has-bg .bg-card-gradient,
+html.has-bg .bg-card,
+html.has-bg [class*="bg-card"] {
+  background-image: none !important;
+  background-color: color-mix(in oklab, var(--color-card) 45%, transparent) !important;
+  backdrop-filter: blur(24px) saturate(150%);
+  border-color: color-mix(in oklab, var(--color-border) 60%, transparent) !important;
+}
+html.has-bg .bg-muted,
+html.has-bg .bg-muted\/60,
+html.has-bg .bg-muted\/70,
+html.has-bg .bg-input\/60 {
+  background-color: color-mix(in oklab, var(--color-muted) 50%, transparent) !important;
+  backdrop-filter: blur(16px);
+}
+html.has-bg .glass,
+html.has-bg .glass-strong {
+  background: color-mix(in oklab, var(--color-card) 40%, transparent) !important;
+}
+
 @layer base {
   * { border-color: var(--color-border); }
   html, body { height: 100%; }
