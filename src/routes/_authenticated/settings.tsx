@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { toast } from "sonner";
-import { Save, Upload, Sun, Moon, Loader2, Palette, Check, Building2, ArrowRight } from "lucide-react";
+import { Save, Upload, Sun, Moon, Loader2, Palette, Check, Building2, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { PALETTES, applyPalette } from "@/lib/usePalette";
+import { BACKGROUNDS, applyBackground } from "@/lib/backgrounds";
 import { Donate } from "@/components/Donate";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 type Profile = { id: string; username: string; display_name: string; bio: string; avatar_url: string | null };
-type Settings = { theme: string; palette: string; chat_density: string; font_size: string; animation_intensity: string };
+type Settings = { theme: string; palette: string; chat_density: string; font_size: string; animation_intensity: string; background_url: string | null };
 
 function SettingsPage() {
   const { user } = useAuth();
@@ -50,7 +51,8 @@ function SettingsPage() {
   useEffect(() => {
     if (!settings) return;
     applyPalette(settings.palette ?? "warm-cafe", settings.theme ?? "light");
-  }, [settings?.theme, settings?.palette]);
+    applyBackground(settings.background_url);
+  }, [settings?.theme, settings?.palette, settings?.background_url]);
 
   const saveProfile = async () => {
     if (!profile || !user) return;
