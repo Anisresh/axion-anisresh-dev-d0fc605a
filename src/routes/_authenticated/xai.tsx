@@ -3,8 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { xaiChat } from "@/lib/xai.functions";
-import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2 } from "lucide-react";
+import { xaiChat, xaiImage } from "@/lib/xai.functions";
+import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -19,12 +19,13 @@ type Msg = { id: string; role: "user" | "assistant" | "system"; content: string;
 function XaiPage() {
   const { user } = useAuth();
   const chat = useServerFn(xaiChat);
+  const imageGen = useServerFn(xaiImage);
   const [convs, setConvs] = useState<Conv[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"fast" | "reasoning">("fast");
+  const [mode, setMode] = useState<"fast" | "reasoning" | "image">("fast");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadConvs = async () => {
@@ -45,11 +46,18 @@ function XaiPage() {
     if (!text.trim() || loading) return;
     const userMsg = text;
     setText(""); setLoading(true);
-    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: userMsg, created_at: new Date().toISOString() }]);
+    const displayContent = mode === "image" ? `🎨 ${userMsg}` : userMsg;
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: displayContent, created_at: new Date().toISOString() }]);
     try {
-      const res = await chat({ data: { conversationId: active, userMessage: userMsg, mode } });
-      setActive(res.conversationId);
-      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: res.reply, created_at: new Date().toISOString() }]);
+      if (mode === "image") {
+        const res = await imageGen({ data: { conversationId: active, prompt: userMsg } });
+        setActive(res.conversationId);
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: `![image](${res.dataUrl})`, created_at: new Date().toISOString() }]);
+      } else {
+        const res = await chat({ data: { conversationId: active, userMessage: userMsg, mode } });
+        setActive(res.conversationId);
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: res.reply, created_at: new Date().toISOString() }]);
+      }
       loadConvs();
     } catch (e: any) {
       toast.error(e?.message ?? "XAI couldn't reply");
