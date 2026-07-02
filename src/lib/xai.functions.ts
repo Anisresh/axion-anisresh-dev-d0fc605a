@@ -53,6 +53,50 @@ export const xaiChat = createServerFn({ method: "POST" })
     return { conversationId: convId, reply };
   });
 
+export const xaiImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { conversationId: string | null; prompt: string }) =>
+    z.object({ conversationId: z.string().uuid().nullable(), prompt: z.string().min(1).max(2000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("AI gateway not configured");
+
+    let convId = data.conversationId;
+    if (!convId) {
+      const title = `🎨 ${data.prompt.slice(0, 40)}`;
+      const { data: conv, error } = await supabase.from("ai_conversations").insert({ user_id: userId, title }).select().single();
+      if (error || !conv) throw new Error("Could not create conversation");
+      convId = conv.id;
+    }
+    await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "user", content: `🎨 ${data.prompt}` });
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: "openai/gpt-image-2",
+        prompt: data.prompt,
+        size: "1024x1024",
+        quality: "low",
+        n: 1,
+      }),
+    });
+    if (!res.ok) {
+      if (res.status === 429) throw new Error("Image gen is busy. Try again in a moment.");
+      if (res.status === 402) throw new Error("AI credits are exhausted. Please add credits in your workspace.");
+      throw new Error(`Image error: ${res.status}`);
+    }
+    const json = await res.json();
+    const b64 = json?.data?.[0]?.b64_json as string | undefined;
+    if (!b64) throw new Error("No image returned");
+    const dataUrl = `data:image/png;base64,${b64}`;
+    const content = `![image](${dataUrl})`;
+    await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "assistant", content });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    return { conversationId: convId, dataUrl };
+  });
+
 export const learningGenerate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { title: string; sourceText: string }) =>
