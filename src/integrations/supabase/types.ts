@@ -442,6 +442,7 @@ export type Database = {
           accent: string
           animation_intensity: string
           background_tint: string
+          background_url: string | null
           chat_density: string
           font_size: string
           palette: string
@@ -453,6 +454,7 @@ export type Database = {
           accent?: string
           animation_intensity?: string
           background_tint?: string
+          background_url?: string | null
           chat_density?: string
           font_size?: string
           palette?: string
@@ -464,6 +466,7 @@ export type Database = {
           accent?: string
           animation_intensity?: string
           background_tint?: string
+          background_url?: string | null
           chat_density?: string
           font_size?: string
           palette?: string

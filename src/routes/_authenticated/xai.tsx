@@ -3,8 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { xaiChat } from "@/lib/xai.functions";
-import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2 } from "lucide-react";
+import { xaiChat, xaiImage } from "@/lib/xai.functions";
+import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -19,12 +19,13 @@ type Msg = { id: string; role: "user" | "assistant" | "system"; content: string;
 function XaiPage() {
   const { user } = useAuth();
   const chat = useServerFn(xaiChat);
+  const imageGen = useServerFn(xaiImage);
   const [convs, setConvs] = useState<Conv[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"fast" | "reasoning">("fast");
+  const [mode, setMode] = useState<"fast" | "reasoning" | "image">("fast");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadConvs = async () => {
@@ -45,11 +46,18 @@ function XaiPage() {
     if (!text.trim() || loading) return;
     const userMsg = text;
     setText(""); setLoading(true);
-    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: userMsg, created_at: new Date().toISOString() }]);
+    const displayContent = mode === "image" ? `🎨 ${userMsg}` : userMsg;
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: displayContent, created_at: new Date().toISOString() }]);
     try {
-      const res = await chat({ data: { conversationId: active, userMessage: userMsg, mode } });
-      setActive(res.conversationId);
-      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: res.reply, created_at: new Date().toISOString() }]);
+      if (mode === "image") {
+        const res = await imageGen({ data: { conversationId: active, prompt: userMsg } });
+        setActive(res.conversationId);
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: `![image](${res.dataUrl})`, created_at: new Date().toISOString() }]);
+      } else {
+        const res = await chat({ data: { conversationId: active, userMessage: userMsg, mode } });
+        setActive(res.conversationId);
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: res.reply, created_at: new Date().toISOString() }]);
+      }
       loadConvs();
     } catch (e: any) {
       toast.error(e?.message ?? "XAI couldn't reply");
@@ -104,16 +112,23 @@ function XaiPage() {
             </div>
           )}
           <div className="space-y-5 max-w-3xl mx-auto">
-            {messages.map((m) => (
-              <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-2xl rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-soft ${m.role === "user" ? "bg-primary-gradient text-primary-foreground" : "bg-card border border-border/60"}`}>
-                  <div className="whitespace-pre-wrap break-words">{m.content}</div>
+            {messages.map((m) => {
+              const imgMatch = m.role === "assistant" ? m.content.match(/^!\[[^\]]*\]\((data:image\/[^)]+)\)$/) : null;
+              return (
+                <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-2xl rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-soft ${m.role === "user" ? "bg-primary-gradient text-primary-foreground" : "bg-card border border-border/60"}`}>
+                    {imgMatch ? (
+                      <img src={imgMatch[1]} alt="Generated" className="rounded-xl max-w-full" />
+                    ) : (
+                      <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {loading && (
               <div className="flex justify-start">
-                <div className="rounded-2xl px-5 py-3 bg-card border border-border/60 inline-flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Thinking…</div>
+                <div className="rounded-2xl px-5 py-3 bg-card border border-border/60 inline-flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> {mode === "image" ? "Painting…" : "Thinking…"}</div>
               </div>
             )}
             <div ref={bottomRef} />
@@ -139,9 +154,17 @@ function XaiPage() {
               >
                 <Brain className="size-3.5" /> Reasoning
               </button>
+              <button
+                type="button"
+                onClick={() => setMode("image")}
+                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-soft border ${mode === "image" ? "bg-primary-gradient text-primary-foreground border-transparent shadow-glow" : "bg-card border-border/60 text-muted-foreground hover:text-foreground"}`}
+                title="Generate an image from your prompt"
+              >
+                <ImageIcon className="size-3.5" /> Image
+              </button>
             </div>
             <div className="flex items-end gap-2">
-              <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="Ask XAI anything…" rows={1} disabled={loading} className="flex-1 resize-none px-4 py-3 rounded-2xl bg-input/60 border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 text-sm max-h-40 disabled:opacity-60" />
+              <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder={mode === "image" ? "Describe an image to generate…" : "Ask XAI anything…"} rows={1} disabled={loading} className="flex-1 resize-none px-4 py-3 rounded-2xl bg-input/60 border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 text-sm max-h-40 disabled:opacity-60" />
               <button onClick={send} disabled={loading || !text.trim()} className="size-11 rounded-2xl bg-primary-gradient text-primary-foreground grid place-items-center shadow-glow hover:opacity-90 transition-soft disabled:opacity-50"><Send className="size-5" /></button>
             </div>
           </div>
