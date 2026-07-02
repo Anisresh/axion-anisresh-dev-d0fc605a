@@ -156,6 +156,29 @@ function SettingsPage() {
           </section>
 
           <section className="mt-6 bg-card-gradient border border-border/60 rounded-3xl p-6 shadow-soft">
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2"><ImageIcon className="size-5 text-primary" /> Background</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">Pick a calm 4K scene. Cards turn frosted-glass automatically.</p>
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {BACKGROUNDS.map((b) => {
+                const active = (settings.background_url ?? "") === b.url;
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => saveSettings({ background_url: b.url || null } as any)}
+                    className={`relative aspect-video rounded-2xl overflow-hidden border-2 transition-soft tap ${active ? "border-primary shadow-glow" : "border-border hover:border-primary/50"}`}
+                    style={b.thumb ? { backgroundImage: `url("${b.thumb}")`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+                  >
+                    {!b.thumb && <div className="absolute inset-0 grid place-items-center text-xs text-muted-foreground bg-muted/60">No background</div>}
+                    {active && <div className="absolute top-2 right-2 size-6 rounded-full bg-primary text-primary-foreground grid place-items-center"><Check className="size-3.5" /></div>}
+                    <div className="absolute bottom-0 inset-x-0 p-2 text-[11px] font-medium text-white bg-gradient-to-t from-black/70 to-transparent">{b.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+
+          <section className="mt-6 bg-card-gradient border border-border/60 rounded-3xl p-6 shadow-soft">
             <h2 className="text-lg font-semibold tracking-tight">Appearance</h2>
             <div className="mt-5 space-y-4">
               <Field label="Theme">
