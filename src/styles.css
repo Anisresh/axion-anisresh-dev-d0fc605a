@@ -240,6 +240,10 @@ html.has-bg body::after {
   backdrop-filter: blur(2px);
 }
 html.has-bg body { background-color: transparent !important; }
+html.has-bg .bg-background,
+html.has-bg [class*="bg-background"] {
+  background-color: transparent !important;
+}
 html.has-bg .bg-card-gradient,
 html.has-bg .bg-card,
 html.has-bg [class*="bg-card"] {
@@ -251,13 +255,22 @@ html.has-bg [class*="bg-card"] {
 html.has-bg .bg-muted,
 html.has-bg .bg-muted\/60,
 html.has-bg .bg-muted\/70,
-html.has-bg .bg-input\/60 {
+html.has-bg .bg-input\/60,
+html.has-bg .bg-input,
+html.has-bg [class*="bg-input"] {
   background-color: color-mix(in oklab, var(--color-muted) 50%, transparent) !important;
   backdrop-filter: blur(16px);
 }
 html.has-bg .glass,
 html.has-bg .glass-strong {
   background: color-mix(in oklab, var(--color-card) 40%, transparent) !important;
+}
+html.has-bg .bg-secondary,
+html.has-bg [class*="bg-secondary"],
+html.has-bg .bg-popover,
+html.has-bg [class*="bg-popover"] {
+  background-color: color-mix(in oklab, var(--color-card) 55%, transparent) !important;
+  backdrop-filter: blur(20px) saturate(140%);
 }
 
 @layer base {
