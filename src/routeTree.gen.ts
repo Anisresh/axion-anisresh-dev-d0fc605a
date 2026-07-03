@@ -15,6 +15,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as AuthenticatedXaiRouteImport } from './routes/_authenticated/xai'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -54,6 +55,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedXaiRoute = AuthenticatedXaiRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
   '/xai': typeof AuthenticatedXaiRoute
+  '/api/tts': typeof ApiTtsRoute
   '/workspaces/$slug': typeof AuthenticatedWorkspacesSlugRoute
   '/workspaces/': typeof AuthenticatedWorkspacesIndexRoute
 }
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
   '/xai': typeof AuthenticatedXaiRoute
+  '/api/tts': typeof ApiTtsRoute
   '/workspaces/$slug': typeof AuthenticatedWorkspacesSlugRoute
   '/workspaces': typeof AuthenticatedWorkspacesIndexRoute
 }
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/xai': typeof AuthenticatedXaiRoute
+  '/api/tts': typeof ApiTtsRoute
   '/_authenticated/workspaces/$slug': typeof AuthenticatedWorkspacesSlugRoute
   '/_authenticated/workspaces/': typeof AuthenticatedWorkspacesIndexRoute
 }
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/xai'
+    | '/api/tts'
     | '/workspaces/$slug'
     | '/workspaces/'
   fileRoutesByTo: FileRoutesByTo
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/xai'
+    | '/api/tts'
     | '/workspaces/$slug'
     | '/workspaces'
   id:
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/users'
     | '/_authenticated/xai'
+    | '/api/tts'
     | '/_authenticated/workspaces/$slug'
     | '/_authenticated/workspaces/'
   fileRoutesById: FileRoutesById
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   WorkspaceRoute: typeof WorkspaceRoute
+  ApiTtsRoute: typeof ApiTtsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/xai': {
@@ -399,6 +419,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   WorkspaceRoute: WorkspaceRoute,
+  ApiTtsRoute: ApiTtsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
