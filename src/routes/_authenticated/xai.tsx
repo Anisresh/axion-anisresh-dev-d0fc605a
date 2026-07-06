@@ -38,14 +38,20 @@ function XaiPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"fast" | "reasoning" | "image">("reasoning");
+  const [mode, setMode] = useState<"fast" | "reasoning" | "image">("fast");
   const [attachments, setAttachments] = useState<Attach[]>([]);
   const [voiceMode, setVoiceMode] = useState(false);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recogRef = useRef<any>(null);
+  const liveActiveRef = useRef(false);
+  const speakingRef = useRef(false);
+  const activeRef = useRef<string | null>(null);
+  useEffect(() => { activeRef.current = active; }, [active]);
+  useEffect(() => { speakingRef.current = speaking; }, [speaking]);
 
   const loadConvs = async () => {
     if (!user) return;
