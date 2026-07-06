@@ -66,10 +66,9 @@ function XaiPage() {
   }, [active]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
-  useEffect(() => () => { stopSpeaking(); recogRef.current?.stop?.(); }, []);
+  useEffect(() => () => { stopLive(); stopSpeaking(); recogRef.current?.stop?.(); }, []);
 
-  const speakReply = async (content: string) => {
-    // strip markdown images and code fences for cleaner narration
+  const speakReply = async (content: string): Promise<void> => {
     const clean = content
       .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
       .replace(/```[\s\S]*?```/g, "")
@@ -80,11 +79,112 @@ function XaiPage() {
       setSpeaking(true);
       await streamSpeak(clean);
     } catch (e: any) {
-      toast.error(e?.message ?? "Voice playback failed");
+      if (!String(e?.message ?? "").toLowerCase().includes("abort")) toast.error(e?.message ?? "Voice playback failed");
     } finally {
       setSpeaking(false);
     }
   };
+
+  // ============ LIVE VOICE MODE (barge-in, back-to-back) ============
+  const stopLive = () => {
+    liveActiveRef.current = false;
+    setLiveMode(false);
+    try { recogRef.current?.abort?.(); } catch {} 
+    try { recogRef.current?.stop?.(); } catch {}
+    recogRef.current = null;
+    stopSpeaking();
+    setSpeaking(false);
+    setListening(false);
+  };
+
+  const sendLiveTurn = async (utterance: string) => {
+    const trimmed = utterance.trim();
+    if (!trimmed) return;
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: trimmed, created_at: new Date().toISOString() }]);
+    try {
+      const res = await chat({ data: { conversationId: activeRef.current, userMessage: trimmed, mode: "voice" } });
+      if (!liveActiveRef.current) return;
+      setActive(res.conversationId);
+      activeRef.current = res.conversationId;
+      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: res.reply, created_at: new Date().toISOString() }]);
+      await speakReply(res.reply);
+      loadConvs();
+    } catch (e: any) {
+      toast.error(e?.message ?? "XAI couldn't reply");
+    }
+  };
+
+  const startLive = async () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Live voice needs Chrome, Edge, or Safari."); return; }
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch { toast.error("Microphone permission is required for live voice."); return; }
+
+    liveActiveRef.current = true;
+    setLiveMode(true);
+    setVoiceMode(true);
+
+    const startRecognizer = () => {
+      if (!liveActiveRef.current) return;
+      const r = new SR();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = "en-US";
+      let heardInterim = false;
+      let pending = "";
+      let silenceTimer: any = null;
+
+      const scheduleFlush = () => {
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          const out = pending.trim();
+          pending = "";
+          heardInterim = false;
+          if (!out) return;
+          try { r.stop(); } catch {}
+          void sendLiveTurn(out);
+        }, 900);
+      };
+
+      r.onresult = (ev: any) => {
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const t = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) pending += t + " ";
+          else interim += t;
+        }
+        // Barge-in: any real speech mid-playback stops XAI immediately
+        if ((interim.trim() || pending.trim()) && speakingRef.current) stopSpeaking();
+        if (interim.trim().length > 0 || pending.trim().length > 0) heardInterim = true;
+        if (pending.trim().length > 0) scheduleFlush();
+      };
+      r.onerror = (ev: any) => {
+        if (ev?.error === "not-allowed") { toast.error("Mic blocked."); stopLive(); return; }
+        // no-speech / aborted → recycle
+      };
+      r.onend = () => {
+        recogRef.current = null;
+        clearTimeout(silenceTimer);
+        if (!liveActiveRef.current) return;
+        if (heardInterim && pending.trim()) {
+          const out = pending.trim();
+          pending = "";
+          void sendLiveTurn(out).then(() => { if (liveActiveRef.current) setTimeout(startRecognizer, 150); });
+        } else {
+          setTimeout(startRecognizer, 200);
+        }
+      };
+      recogRef.current = r;
+      setListening(true);
+      try { r.start(); } catch { setTimeout(startRecognizer, 400); }
+    };
+
+    startRecognizer();
+    // A warm greeting to kick things off
+    void speakReply("I'm listening. Just talk to me — you can interrupt anytime.");
+  };
+
 
   const toggleMic = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
