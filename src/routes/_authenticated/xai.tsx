@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { xaiChat, xaiImage } from "@/lib/xai.functions";
 import { streamSpeak, stopSpeaking } from "@/lib/streamTTS";
-import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2, ImageIcon, Paperclip, Mic, MicOff, Volume2, VolumeX, X, FileText } from "lucide-react";
+import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2, ImageIcon, Paperclip, Mic, MicOff, Volume2, VolumeX, X, FileText, Radio, PhoneOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -38,14 +38,20 @@ function XaiPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"fast" | "reasoning" | "image">("reasoning");
+  const [mode, setMode] = useState<"fast" | "reasoning" | "image">("fast");
   const [attachments, setAttachments] = useState<Attach[]>([]);
   const [voiceMode, setVoiceMode] = useState(false);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recogRef = useRef<any>(null);
+  const liveActiveRef = useRef(false);
+  const speakingRef = useRef(false);
+  const activeRef = useRef<string | null>(null);
+  useEffect(() => { activeRef.current = active; }, [active]);
+  useEffect(() => { speakingRef.current = speaking; }, [speaking]);
 
   const loadConvs = async () => {
     if (!user) return;
@@ -60,10 +66,9 @@ function XaiPage() {
   }, [active]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
-  useEffect(() => () => { stopSpeaking(); recogRef.current?.stop?.(); }, []);
+  useEffect(() => () => { stopLive(); stopSpeaking(); recogRef.current?.stop?.(); }, []);
 
-  const speakReply = async (content: string) => {
-    // strip markdown images and code fences for cleaner narration
+  const speakReply = async (content: string): Promise<void> => {
     const clean = content
       .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
       .replace(/```[\s\S]*?```/g, "")
@@ -74,11 +79,112 @@ function XaiPage() {
       setSpeaking(true);
       await streamSpeak(clean);
     } catch (e: any) {
-      toast.error(e?.message ?? "Voice playback failed");
+      if (!String(e?.message ?? "").toLowerCase().includes("abort")) toast.error(e?.message ?? "Voice playback failed");
     } finally {
       setSpeaking(false);
     }
   };
+
+  // ============ LIVE VOICE MODE (barge-in, back-to-back) ============
+  const stopLive = () => {
+    liveActiveRef.current = false;
+    setLiveMode(false);
+    try { recogRef.current?.abort?.(); } catch {} 
+    try { recogRef.current?.stop?.(); } catch {}
+    recogRef.current = null;
+    stopSpeaking();
+    setSpeaking(false);
+    setListening(false);
+  };
+
+  const sendLiveTurn = async (utterance: string) => {
+    const trimmed = utterance.trim();
+    if (!trimmed) return;
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: trimmed, created_at: new Date().toISOString() }]);
+    try {
+      const res = await chat({ data: { conversationId: activeRef.current, userMessage: trimmed, mode: "voice" } });
+      if (!liveActiveRef.current) return;
+      setActive(res.conversationId);
+      activeRef.current = res.conversationId;
+      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: res.reply, created_at: new Date().toISOString() }]);
+      await speakReply(res.reply);
+      loadConvs();
+    } catch (e: any) {
+      toast.error(e?.message ?? "XAI couldn't reply");
+    }
+  };
+
+  const startLive = async () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Live voice needs Chrome, Edge, or Safari."); return; }
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch { toast.error("Microphone permission is required for live voice."); return; }
+
+    liveActiveRef.current = true;
+    setLiveMode(true);
+    setVoiceMode(true);
+
+    const startRecognizer = () => {
+      if (!liveActiveRef.current) return;
+      const r = new SR();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = "en-US";
+      let heardInterim = false;
+      let pending = "";
+      let silenceTimer: any = null;
+
+      const scheduleFlush = () => {
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          const out = pending.trim();
+          pending = "";
+          heardInterim = false;
+          if (!out) return;
+          try { r.stop(); } catch {}
+          void sendLiveTurn(out);
+        }, 900);
+      };
+
+      r.onresult = (ev: any) => {
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const t = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) pending += t + " ";
+          else interim += t;
+        }
+        // Barge-in: any real speech mid-playback stops XAI immediately
+        if ((interim.trim() || pending.trim()) && speakingRef.current) stopSpeaking();
+        if (interim.trim().length > 0 || pending.trim().length > 0) heardInterim = true;
+        if (pending.trim().length > 0) scheduleFlush();
+      };
+      r.onerror = (ev: any) => {
+        if (ev?.error === "not-allowed") { toast.error("Mic blocked."); stopLive(); return; }
+        // no-speech / aborted → recycle
+      };
+      r.onend = () => {
+        recogRef.current = null;
+        clearTimeout(silenceTimer);
+        if (!liveActiveRef.current) return;
+        if (heardInterim && pending.trim()) {
+          const out = pending.trim();
+          pending = "";
+          void sendLiveTurn(out).then(() => { if (liveActiveRef.current) setTimeout(startRecognizer, 150); });
+        } else {
+          setTimeout(startRecognizer, 200);
+        }
+      };
+      recogRef.current = r;
+      setListening(true);
+      try { r.start(); } catch { setTimeout(startRecognizer, 400); }
+    };
+
+    startRecognizer();
+    // A warm greeting to kick things off
+    void speakReply("I'm listening. Just talk to me — you can interrupt anytime.");
+  };
+
 
   const toggleMic = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -249,6 +355,14 @@ function XaiPage() {
                 title="Speak replies aloud"
               >
                 {voiceMode ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />} Voice
+              </button>
+              <button
+                type="button"
+                onClick={() => (liveMode ? stopLive() : startLive())}
+                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-soft border ${liveMode ? "bg-destructive/15 text-destructive border-destructive/40 animate-pulse" : "bg-card border-border/60 text-muted-foreground hover:text-foreground"}`}
+                title={liveMode ? "End live conversation" : "Start live voice — talk back and forth, interrupt anytime"}
+              >
+                {liveMode ? <><PhoneOff className="size-3.5" /> End</> : <><Radio className="size-3.5" /> Live</>}
               </button>
             </div>
 
