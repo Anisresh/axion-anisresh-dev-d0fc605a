@@ -356,6 +356,14 @@ function XaiPage() {
               >
                 {voiceMode ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />} Voice
               </button>
+              <button
+                type="button"
+                onClick={() => (liveMode ? stopLive() : startLive())}
+                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-soft border ${liveMode ? "bg-destructive/15 text-destructive border-destructive/40 animate-pulse" : "bg-card border-border/60 text-muted-foreground hover:text-foreground"}`}
+                title={liveMode ? "End live conversation" : "Start live voice — talk back and forth, interrupt anytime"}
+              >
+                {liveMode ? <><PhoneOff className="size-3.5" /> End</> : <><Radio className="size-3.5" /> Live</>}
+              </button>
             </div>
 
             {attachments.length > 0 && (
