@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { xaiChat, xaiImage } from "@/lib/xai.functions";
 import { streamSpeak, stopSpeaking } from "@/lib/streamTTS";
-import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2, ImageIcon, Paperclip, Mic, MicOff, Volume2, VolumeX, X, FileText } from "lucide-react";
+import { Send, Sparkles, Plus, Loader2, Zap, Brain, Trash2, ImageIcon, Paperclip, Mic, MicOff, Volume2, VolumeX, X, FileText, Radio, PhoneOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
