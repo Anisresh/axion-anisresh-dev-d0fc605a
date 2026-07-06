@@ -41,11 +41,11 @@ type Attachment = z.infer<typeof AttachmentSchema>;
 
 export const xaiChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { conversationId: string | null; userMessage: string; mode?: "fast" | "reasoning"; attachments?: Attachment[] }) =>
+  .inputValidator((d: { conversationId: string | null; userMessage: string; mode?: "fast" | "reasoning" | "voice"; attachments?: Attachment[] }) =>
     z.object({
       conversationId: z.string().uuid().nullable(),
       userMessage: z.string().min(1).max(8000),
-      mode: z.enum(["fast", "reasoning"]).optional(),
+      mode: z.enum(["fast", "reasoning", "voice"]).optional(),
       attachments: z.array(AttachmentSchema).max(6).optional(),
     }).parse(d))
   .handler(async ({ data, context }) => {
@@ -57,8 +57,9 @@ export const xaiChat = createServerFn({ method: "POST" })
       if (error || !conv) throw new Error("Could not create conversation");
       convId = conv.id;
     }
-    const { data: history } = await supabase.from("ai_messages").select("role, content").eq("conversation_id", convId).order("created_at");
-    // Build current-turn user content: text + multimodal parts
+    // Only pull recent turns for latency; older context stays in the DB.
+    const { data: history } = await supabase.from("ai_messages").select("role, content").eq("conversation_id", convId).order("created_at", { ascending: false }).limit(24);
+    const recent = (history ?? []).reverse();
     const parts: ContentPart[] = [{ type: "text", text: data.userMessage }];
     for (const a of data.attachments ?? []) {
       if (a.kind === "image") parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
@@ -66,16 +67,17 @@ export const xaiChat = createServerFn({ method: "POST" })
     }
     const currentUser: GwMessage = { role: "user", content: parts.length > 1 ? parts : data.userMessage };
     const messages: GwMessage[] = [
-      ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content as string })),
+      ...recent.map((m: any) => ({ role: m.role, content: m.content as string })),
       currentUser,
     ];
-    // store user msg (persist a note about attachments so it's visible in history)
     const attachNote = data.attachments?.length ? `\n\n_📎 ${data.attachments.length} attachment${data.attachments.length > 1 ? "s" : ""}_` : "";
     await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "user", content: data.userMessage + attachNote });
-    const model = data.mode === "fast" ? "google/gemini-3-flash-preview" : "google/gemini-3-pro-preview";
+    const model = data.mode === "reasoning" ? "google/gemini-3-pro-preview" : "google/gemini-3-flash-preview";
     const system = data.mode === "reasoning"
-      ? SYSTEM_PROMPT + " Think step-by-step carefully. Show clear reasoning when it helps."
-      : SYSTEM_PROMPT;
+      ? SYSTEM_PROMPT + " Take a breath and think step-by-step. Show clear reasoning when it truly helps."
+      : data.mode === "voice"
+        ? SYSTEM_PROMPT + " This is a live voice conversation. Reply in 1–3 short spoken sentences. No markdown, no lists, no code."
+        : SYSTEM_PROMPT;
     const reply = await callGateway(messages, system, model);
     if (!reply) throw new Error("No reply from XAI");
     await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "assistant", content: reply });
