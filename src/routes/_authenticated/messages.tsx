@@ -236,7 +236,7 @@ function MessagesPage() {
     if (!user || !active) return;
     const tempId = `temp-${Date.now()}`;
     const optimistic: Msg = { id: tempId, conversation_id: active, sender_id: user.id, kind, content: kind === "file" ? `${file.name}::${file.size}` : null, media_url: null, duration_ms: null, created_at: new Date().toISOString() };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages((prev) => sortMsgs([...prev, optimistic]));
     const path = `${user.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
     const { error } = await supabase.storage.from("chat-media").upload(path, file, { contentType: file.type || undefined });
     if (error) { toast.error(error.message); setMessages((prev) => prev.filter((m) => m.id !== tempId)); return; }
@@ -248,7 +248,7 @@ function MessagesPage() {
     }).select().single();
     if (insErr || !inserted) { toast.error(insErr?.message ?? "Upload failed"); setMessages((prev) => prev.filter((m) => m.id !== tempId)); return; }
     const m = inserted as Msg;
-    setMessages((prev) => { const w = prev.filter((x) => x.id !== tempId); return w.some((x) => x.id === m.id) ? w : [...w, m]; });
+    setMessages((prev) => mergeMsg(prev.filter((x) => x.id !== tempId), m));
   };
 
   // --- Voice recording ---
