@@ -20,6 +20,32 @@ type Reaction = { id: string; message_id: string; user_id: string; emoji: string
 const REACTION_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥", "🎉", "👏"];
 const PRESENCE_DOT: Record<string, string> = { online: "bg-emerald-500", away: "bg-amber-400", busy: "bg-rose-500", offline: "bg-zinc-500" };
 
+const sortMsgs = (arr: Msg[]) => [...arr].sort((a, b) => {
+  const ta = new Date(a.created_at).getTime();
+  const tb = new Date(b.created_at).getTime();
+  if (ta !== tb) return ta - tb;
+  return a.id.localeCompare(b.id);
+});
+
+// Replace an optimistic temp with the confirmed row, or dedupe by id.
+const mergeMsg = (prev: Msg[], incoming: Msg): Msg[] => {
+  if (prev.some((x) => x.id === incoming.id)) return prev;
+  // Try to match an optimistic temp from the same sender with same content/kind within 15s
+  const idx = prev.findIndex((x) =>
+    x.id.startsWith("temp-") &&
+    x.sender_id === incoming.sender_id &&
+    x.kind === incoming.kind &&
+    (x.content ?? "") === (incoming.content ?? "") &&
+    Math.abs(new Date(x.created_at).getTime() - new Date(incoming.created_at).getTime()) < 15000
+  );
+  if (idx >= 0) {
+    const copy = prev.slice();
+    copy[idx] = incoming;
+    return sortMsgs(copy);
+  }
+  return sortMsgs([...prev, incoming]);
+};
+
 function MessagesPage() {
   const { user } = useAuth();
   const [convs, setConvs] = useState<Conv[]>([]);
