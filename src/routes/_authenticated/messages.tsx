@@ -20,6 +20,32 @@ type Reaction = { id: string; message_id: string; user_id: string; emoji: string
 const REACTION_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥", "🎉", "👏"];
 const PRESENCE_DOT: Record<string, string> = { online: "bg-emerald-500", away: "bg-amber-400", busy: "bg-rose-500", offline: "bg-zinc-500" };
 
+const sortMsgs = (arr: Msg[]) => [...arr].sort((a, b) => {
+  const ta = new Date(a.created_at).getTime();
+  const tb = new Date(b.created_at).getTime();
+  if (ta !== tb) return ta - tb;
+  return a.id.localeCompare(b.id);
+});
+
+// Replace an optimistic temp with the confirmed row, or dedupe by id.
+const mergeMsg = (prev: Msg[], incoming: Msg): Msg[] => {
+  if (prev.some((x) => x.id === incoming.id)) return prev;
+  // Try to match an optimistic temp from the same sender with same content/kind within 15s
+  const idx = prev.findIndex((x) =>
+    x.id.startsWith("temp-") &&
+    x.sender_id === incoming.sender_id &&
+    x.kind === incoming.kind &&
+    (x.content ?? "") === (incoming.content ?? "") &&
+    Math.abs(new Date(x.created_at).getTime() - new Date(incoming.created_at).getTime()) < 15000
+  );
+  if (idx >= 0) {
+    const copy = prev.slice();
+    copy[idx] = incoming;
+    return sortMsgs(copy);
+  }
+  return sortMsgs([...prev, incoming]);
+};
+
 function MessagesPage() {
   const { user } = useAuth();
   const [convs, setConvs] = useState<Conv[]>([]);
@@ -94,7 +120,7 @@ function MessagesPage() {
     (async () => {
       const { data } = await supabase.from("messages").select("*").eq("conversation_id", active).order("created_at");
       if (cancelled) return;
-      const list = (data as Msg[]) ?? [];
+      const list = sortMsgs((data as Msg[]) ?? []);
       setMessages(list);
       const ids = list.map((m) => m.id);
       if (ids.length) {
@@ -121,10 +147,17 @@ function MessagesPage() {
       }
     });
 
+    // Make sure the realtime socket has a fresh JWT so RLS-protected
+    // postgres_changes subscriptions deliver rows.
+    supabase.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      if (token) supabase.realtime.setAuth(token);
+    });
+
     const ch = supabase.channel(`conv-${active}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${active}` }, (payload) => {
         const m = payload.new as Msg;
-        setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m]);
+        setMessages((prev) => mergeMsg(prev, m));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "message_reads" }, (payload) => {
         const r = payload.new as any;
@@ -148,6 +181,38 @@ function MessagesPage() {
       .subscribe();
     channelRef.current = ch;
     return () => { cancelled = true; supabase.removeChannel(ch); channelRef.current = null; };
+  }, [active, user]);
+
+  // Safety-net refetch: on tab focus/visibility, pull any messages the realtime
+  // socket may have missed while the tab was hidden or the connection dropped.
+  useEffect(() => {
+    if (!active || !user) return;
+    const refetch = async () => {
+      const { data } = await supabase.from("messages").select("*").eq("conversation_id", active).order("created_at");
+      const list = (data as Msg[]) ?? [];
+      setMessages((prev) => {
+        const tempOnly = prev.filter((m) => m.id.startsWith("temp-"));
+        const merged = sortMsgs([...list, ...tempOnly]);
+        // Drop temp rows that a matching confirmed row now replaces
+        return merged.filter((m, i, arr) => {
+          if (!m.id.startsWith("temp-")) return true;
+          return !arr.some((x) => x !== m && !x.id.startsWith("temp-") &&
+            x.sender_id === m.sender_id && x.kind === m.kind &&
+            (x.content ?? "") === (m.content ?? "") &&
+            Math.abs(new Date(x.created_at).getTime() - new Date(m.created_at).getTime()) < 15000);
+        });
+      });
+    };
+    const onVis = () => { if (!document.hidden) refetch(); };
+    const onFocus = () => refetch();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onFocus);
+    const iv = setInterval(refetch, 15000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onFocus);
+      clearInterval(iv);
+    };
   }, [active, user]);
 
   useEffect(() => {
@@ -187,11 +252,11 @@ function MessagesPage() {
     setText("");
     const tempId = `temp-${Date.now()}`;
     const optimistic: Msg = { id: tempId, conversation_id: active, sender_id: user.id, kind: "text", content, media_url: null, duration_ms: null, created_at: new Date().toISOString() };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages((prev) => sortMsgs([...prev, optimistic]));
     const { data, error } = await supabase.from("messages").insert({ conversation_id: active, sender_id: user.id, kind: "text", content }).select().single();
     if (error) { toast.error(error.message); setMessages((prev) => prev.filter((m) => m.id !== tempId)); setText(content); return; }
     const m = data as Msg;
-    setMessages((prev) => { const w = prev.filter((x) => x.id !== tempId); return w.some((x) => x.id === m.id) ? w : [...w, m]; });
+    setMessages((prev) => mergeMsg(prev.filter((x) => x.id !== tempId), m));
   };
 
   const broadcastTyping = () => {
@@ -203,7 +268,7 @@ function MessagesPage() {
     if (!user || !active) return;
     const tempId = `temp-${Date.now()}`;
     const optimistic: Msg = { id: tempId, conversation_id: active, sender_id: user.id, kind, content: kind === "file" ? `${file.name}::${file.size}` : null, media_url: null, duration_ms: null, created_at: new Date().toISOString() };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages((prev) => sortMsgs([...prev, optimistic]));
     const path = `${user.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
     const { error } = await supabase.storage.from("chat-media").upload(path, file, { contentType: file.type || undefined });
     if (error) { toast.error(error.message); setMessages((prev) => prev.filter((m) => m.id !== tempId)); return; }
@@ -215,7 +280,7 @@ function MessagesPage() {
     }).select().single();
     if (insErr || !inserted) { toast.error(insErr?.message ?? "Upload failed"); setMessages((prev) => prev.filter((m) => m.id !== tempId)); return; }
     const m = inserted as Msg;
-    setMessages((prev) => { const w = prev.filter((x) => x.id !== tempId); return w.some((x) => x.id === m.id) ? w : [...w, m]; });
+    setMessages((prev) => mergeMsg(prev.filter((x) => x.id !== tempId), m));
   };
 
   // --- Voice recording ---
@@ -240,13 +305,13 @@ function MessagesPage() {
         const tempId = `temp-${Date.now()}`;
         const localUrl = URL.createObjectURL(blob);
         const optimistic: Msg = { id: tempId, conversation_id: active, sender_id: user.id, kind: "voice", content: null, media_url: localUrl, duration_ms: duration, created_at: new Date().toISOString() };
-        setMessages((prev) => [...prev, optimistic]);
+        setMessages((prev) => sortMsgs([...prev, optimistic]));
         const path = `${user.id}/voice-${Date.now()}.webm`;
         const { error } = await supabase.storage.from("chat-media").upload(path, blob, { contentType: blob.type });
         if (error) { toast.error(error.message); setMessages((prev) => prev.filter((m) => m.id !== tempId)); return; }
         const { data: signed } = await supabase.storage.from("chat-media").createSignedUrl(path, 60 * 60 * 24 * 60);
         const { data: inserted } = await supabase.from("messages").insert({ conversation_id: active, sender_id: user.id, kind: "voice", media_url: signed?.signedUrl ?? path, duration_ms: duration }).select().single();
-        if (inserted) { const m = inserted as Msg; setMessages((prev) => { const w = prev.filter((x) => x.id !== tempId); return w.some((x) => x.id === m.id) ? w : [...w, m]; }); }
+        if (inserted) { const m = inserted as Msg; setMessages((prev) => mergeMsg(prev.filter((x) => x.id !== tempId), m)); }
       };
       recStartRef.current = Date.now();
       rec.start();
