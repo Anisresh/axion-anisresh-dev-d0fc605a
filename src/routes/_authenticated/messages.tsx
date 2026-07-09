@@ -273,13 +273,13 @@ function MessagesPage() {
         const tempId = `temp-${Date.now()}`;
         const localUrl = URL.createObjectURL(blob);
         const optimistic: Msg = { id: tempId, conversation_id: active, sender_id: user.id, kind: "voice", content: null, media_url: localUrl, duration_ms: duration, created_at: new Date().toISOString() };
-        setMessages((prev) => [...prev, optimistic]);
+        setMessages((prev) => sortMsgs([...prev, optimistic]));
         const path = `${user.id}/voice-${Date.now()}.webm`;
         const { error } = await supabase.storage.from("chat-media").upload(path, blob, { contentType: blob.type });
         if (error) { toast.error(error.message); setMessages((prev) => prev.filter((m) => m.id !== tempId)); return; }
         const { data: signed } = await supabase.storage.from("chat-media").createSignedUrl(path, 60 * 60 * 24 * 60);
         const { data: inserted } = await supabase.from("messages").insert({ conversation_id: active, sender_id: user.id, kind: "voice", media_url: signed?.signedUrl ?? path, duration_ms: duration }).select().single();
-        if (inserted) { const m = inserted as Msg; setMessages((prev) => { const w = prev.filter((x) => x.id !== tempId); return w.some((x) => x.id === m.id) ? w : [...w, m]; }); }
+        if (inserted) { const m = inserted as Msg; setMessages((prev) => mergeMsg(prev.filter((x) => x.id !== tempId), m)); }
       };
       recStartRef.current = Date.now();
       rec.start();
