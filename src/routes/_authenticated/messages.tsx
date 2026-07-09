@@ -120,7 +120,7 @@ function MessagesPage() {
     (async () => {
       const { data } = await supabase.from("messages").select("*").eq("conversation_id", active).order("created_at");
       if (cancelled) return;
-      const list = (data as Msg[]) ?? [];
+      const list = sortMsgs((data as Msg[]) ?? []);
       setMessages(list);
       const ids = list.map((m) => m.id);
       if (ids.length) {
@@ -147,10 +147,17 @@ function MessagesPage() {
       }
     });
 
+    // Make sure the realtime socket has a fresh JWT so RLS-protected
+    // postgres_changes subscriptions deliver rows.
+    supabase.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      if (token) supabase.realtime.setAuth(token);
+    });
+
     const ch = supabase.channel(`conv-${active}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${active}` }, (payload) => {
         const m = payload.new as Msg;
-        setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m]);
+        setMessages((prev) => mergeMsg(prev, m));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "message_reads" }, (payload) => {
         const r = payload.new as any;
