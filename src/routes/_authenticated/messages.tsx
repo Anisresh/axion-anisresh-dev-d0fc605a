@@ -220,11 +220,11 @@ function MessagesPage() {
     setText("");
     const tempId = `temp-${Date.now()}`;
     const optimistic: Msg = { id: tempId, conversation_id: active, sender_id: user.id, kind: "text", content, media_url: null, duration_ms: null, created_at: new Date().toISOString() };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages((prev) => sortMsgs([...prev, optimistic]));
     const { data, error } = await supabase.from("messages").insert({ conversation_id: active, sender_id: user.id, kind: "text", content }).select().single();
     if (error) { toast.error(error.message); setMessages((prev) => prev.filter((m) => m.id !== tempId)); setText(content); return; }
     const m = data as Msg;
-    setMessages((prev) => { const w = prev.filter((x) => x.id !== tempId); return w.some((x) => x.id === m.id) ? w : [...w, m]; });
+    setMessages((prev) => mergeMsg(prev.filter((x) => x.id !== tempId), m));
   };
 
   const broadcastTyping = () => {
