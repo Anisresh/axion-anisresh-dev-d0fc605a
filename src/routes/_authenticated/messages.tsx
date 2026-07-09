@@ -183,6 +183,38 @@ function MessagesPage() {
     return () => { cancelled = true; supabase.removeChannel(ch); channelRef.current = null; };
   }, [active, user]);
 
+  // Safety-net refetch: on tab focus/visibility, pull any messages the realtime
+  // socket may have missed while the tab was hidden or the connection dropped.
+  useEffect(() => {
+    if (!active || !user) return;
+    const refetch = async () => {
+      const { data } = await supabase.from("messages").select("*").eq("conversation_id", active).order("created_at");
+      const list = (data as Msg[]) ?? [];
+      setMessages((prev) => {
+        const tempOnly = prev.filter((m) => m.id.startsWith("temp-"));
+        const merged = sortMsgs([...list, ...tempOnly]);
+        // Drop temp rows that a matching confirmed row now replaces
+        return merged.filter((m, i, arr) => {
+          if (!m.id.startsWith("temp-")) return true;
+          return !arr.some((x) => x !== m && !x.id.startsWith("temp-") &&
+            x.sender_id === m.sender_id && x.kind === m.kind &&
+            (x.content ?? "") === (m.content ?? "") &&
+            Math.abs(new Date(x.created_at).getTime() - new Date(m.created_at).getTime()) < 15000);
+        });
+      });
+    };
+    const onVis = () => { if (!document.hidden) refetch(); };
+    const onFocus = () => refetch();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onFocus);
+    const iv = setInterval(refetch, 15000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onFocus);
+      clearInterval(iv);
+    };
+  }, [active, user]);
+
   useEffect(() => {
     if (!active || !user || !messages.length) return;
     const unread = messages.filter((m) => m.sender_id !== user.id && !(reads[m.id] ?? []).includes(user.id));
