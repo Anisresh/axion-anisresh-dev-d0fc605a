@@ -182,11 +182,9 @@ function SettingsPage() {
             <h2 className="text-lg font-semibold tracking-tight">Appearance</h2>
             <div className="mt-5 space-y-4">
               <Field label="Theme">
-                <div className="inline-flex p-1 rounded-2xl bg-muted/60">
-                  <button onClick={() => saveSettings({ theme: "light" })} className={`px-4 h-9 rounded-xl inline-flex items-center gap-2 text-sm transition-soft tap ${settings.theme === "light" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><Sun className="size-4" /> Warm light</button>
-                  <button onClick={() => saveSettings({ theme: "dark" })} className={`px-4 h-9 rounded-xl inline-flex items-center gap-2 text-sm transition-soft tap ${settings.theme === "dark" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><Moon className="size-4" /> Cozy dark</button>
-                </div>
+                <p className="text-sm text-muted-foreground">Light or dark is part of each theme above — pick a theme to switch.</p>
               </Field>
+
               <Field label="Chat density">
                 <select value={settings.chat_density} onChange={(e) => saveSettings({ chat_density: e.target.value })} className="h-10 px-3 rounded-xl bg-input/60 border border-border text-sm">
                   <option value="compact">Compact</option><option value="comfortable">Comfortable</option><option value="cozy">Cozy</option>
