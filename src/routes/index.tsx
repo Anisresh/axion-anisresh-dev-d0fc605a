@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Sparkles, MessageCircle, GraduationCap, Timer, Shield, ArrowRight } from "lucide-react";
+import { Leaf } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { LandingExtras } from "@/components/LandingExtras";
 import { WorkspaceShowcase } from "@/components/WorkspaceShowcase";
@@ -32,7 +33,7 @@ export default function Landing() {
       {/* Nav */}
       <header className="px-6 md:px-10 pt-6 flex items-center justify-between max-w-7xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="size-9 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground font-bold shadow-glow">A6</div>
+          <div className="size-9 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground shadow-glow"><Leaf className="size-4.5" /></div>
           <span className="font-semibold tracking-tight text-lg">FernCove</span>
         </Link>
         <nav className="flex items-center gap-2">
