@@ -45,8 +45,6 @@
   --color-mist: var(--mist);
 }
 
-/* ============ WARM CAFÉ — DARK by default (cozy rainy-evening café) ============ */
-:root {
 /* ============ FernCove theme engine — calm, organic, quiet-luxury ============ */
 :root { --radius: 1.75rem; }
 
