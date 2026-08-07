@@ -18,7 +18,7 @@ export function WorkspaceShowcase() {
           <span>New · For organizations</span>
         </div>
         <h2 className="mt-6 text-4xl md:text-6xl font-semibold tracking-tight">
-          Axion <span className="text-primary">Workspace</span>
+          FernCove <span className="text-primary">Workspace</span>
         </h2>
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
           AI for Teachers · Schools · Teams · Businesses

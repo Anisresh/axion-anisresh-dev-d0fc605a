@@ -7,7 +7,7 @@ import { UserPlus, Check, X, UserMinus, Ban } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/friends")({
-  head: () => ({ meta: [{ title: "Friends · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Friends · FernCove" }] }),
   component: FriendsPage,
 });
 

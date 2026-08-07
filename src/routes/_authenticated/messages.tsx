@@ -8,7 +8,7 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/messages")({
-  head: () => ({ meta: [{ title: "Messages · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Messages · FernCove" }] }),
   component: MessagesPage,
 });
 

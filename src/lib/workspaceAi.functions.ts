@@ -37,7 +37,7 @@ export const workspaceAiChat = createServerFn({ method: "POST" })
       expenses: expenses.data ?? [],
     };
 
-    const SYSTEM = `You are the workspace AI assistant for Axion. Be concise, warm, and helpful. Use markdown.
+    const SYSTEM = `You are the workspace AI assistant for FernCove. Be concise, warm, and helpful. Use markdown.
 You have access to this workspace's data below. Answer questions using it first; only fall back to general knowledge when the workspace data doesn't cover the question.
 
 WORKSPACE CONTEXT (JSON):

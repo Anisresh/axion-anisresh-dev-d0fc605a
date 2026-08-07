@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { toast } from "sonner";
-import { Save, Upload, Sun, Moon, Loader2, Palette, Check, Building2, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { Save, Upload, Loader2, Palette, Check, Building2, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { PALETTES, applyPalette } from "@/lib/usePalette";
 import { BACKGROUNDS, applyBackground } from "@/lib/backgrounds";
 import { Donate } from "@/components/Donate";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Settings · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Settings · FernCove" }] }),
   component: SettingsPage,
 });
 
@@ -50,7 +50,7 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!settings) return;
-    applyPalette(settings.palette ?? "warm-cafe", settings.theme ?? "light");
+    applyPalette(settings.palette ?? "fern");
     applyBackground(settings.background_url);
   }, [settings?.theme, settings?.palette, settings?.background_url]);
 
@@ -83,7 +83,7 @@ function SettingsPage() {
     <div className="p-6 md:p-10 max-w-3xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <h1 className="text-4xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-2 text-muted-foreground">Make Axion6 yours.</p>
+        <p className="mt-2 text-muted-foreground">Make FernCove yours.</p>
       </motion.div>
 
       <section className="mt-6 bg-card-gradient border border-border/60 rounded-3xl p-6 shadow-soft">
@@ -133,8 +133,8 @@ function SettingsPage() {
       {settings && (
         <>
           <section className="mt-6 bg-card-gradient border border-border/60 rounded-3xl p-6 shadow-soft">
-            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2"><Palette className="size-5 text-primary" /> Color palette</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">Switch the entire café mood. Changes apply instantly.</p>
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2"><Palette className="size-5 text-primary" /> Theme</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">Eight handcrafted FernCove themes. Changes apply instantly.</p>
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {PALETTES.map((p) => {
                 const active = settings.palette === p.id;
@@ -182,11 +182,9 @@ function SettingsPage() {
             <h2 className="text-lg font-semibold tracking-tight">Appearance</h2>
             <div className="mt-5 space-y-4">
               <Field label="Theme">
-                <div className="inline-flex p-1 rounded-2xl bg-muted/60">
-                  <button onClick={() => saveSettings({ theme: "light" })} className={`px-4 h-9 rounded-xl inline-flex items-center gap-2 text-sm transition-soft tap ${settings.theme === "light" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><Sun className="size-4" /> Warm light</button>
-                  <button onClick={() => saveSettings({ theme: "dark" })} className={`px-4 h-9 rounded-xl inline-flex items-center gap-2 text-sm transition-soft tap ${settings.theme === "dark" ? "bg-card shadow-soft" : "text-muted-foreground"}`}><Moon className="size-4" /> Cozy dark</button>
-                </div>
+                <p className="text-sm text-muted-foreground">Light or dark is part of each theme above — pick a theme to switch.</p>
               </Field>
+
               <Field label="Chat density">
                 <select value={settings.chat_density} onChange={(e) => saveSettings({ chat_density: e.target.value })} className="h-10 px-3 rounded-xl bg-input/60 border border-border text-sm">
                   <option value="compact">Compact</option><option value="comfortable">Comfortable</option><option value="cozy">Cozy</option>

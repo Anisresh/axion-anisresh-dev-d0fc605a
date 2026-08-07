@@ -6,7 +6,7 @@ import { Play, Pause, RotateCcw, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/focus")({
-  head: () => ({ meta: [{ title: "Focus · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Focus · FernCove" }] }),
   component: FocusPage,
 });
 

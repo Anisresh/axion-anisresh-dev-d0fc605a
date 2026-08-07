@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 
 const EMAIL = "anisreshar@gmail.com";
-const SUBJECT = "Axion6 — Complaint / Feedback";
-const BODY = "Hi Anisresh,\n\nI'd like to share the following about Axion6:\n\n— What happened:\n\n— What I expected:\n\n— Page / feature:\n\nThanks!\n";
+const SUBJECT = "FernCove — Complaint / Feedback";
+const BODY = "Hi Anisresh,\n\nI'd like to share the following about FernCove:\n\n— What happened:\n\n— What I expected:\n\n— Page / feature:\n\nThanks!\n";
 const MAILTO = `mailto:${EMAIL}?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(BODY)}`;
 const GMAIL_COMPOSE = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL)}&su=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(BODY)}`;
 

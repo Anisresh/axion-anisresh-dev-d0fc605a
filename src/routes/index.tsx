@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Sparkles, MessageCircle, GraduationCap, Timer, Shield, ArrowRight } from "lucide-react";
+import { Leaf } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { LandingExtras } from "@/components/LandingExtras";
 import { WorkspaceShowcase } from "@/components/WorkspaceShowcase";
@@ -9,9 +10,9 @@ import { Donate } from "@/components/Donate";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Axion6 — Calm, premium communication & learning" },
+      { title: "FernCove — Calm, premium communication & learning" },
       { name: "description", content: "Messaging, focus, and AI-powered learning in one calm, premium space." },
-      { property: "og:title", content: "Axion6" },
+      { property: "og:title", content: "FernCove" },
       { property: "og:description", content: "Calm, premium communication and AI-powered learning." },
     ],
   }),
@@ -32,8 +33,8 @@ export default function Landing() {
       {/* Nav */}
       <header className="px-6 md:px-10 pt-6 flex items-center justify-between max-w-7xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="size-9 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground font-bold shadow-glow">A6</div>
-          <span className="font-semibold tracking-tight text-lg">Axion6</span>
+          <div className="size-9 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground shadow-glow"><Leaf className="size-4.5" /></div>
+          <span className="font-semibold tracking-tight text-lg">FernCove</span>
         </Link>
         <nav className="flex items-center gap-2">
           <Link to="/auth" className="hidden sm:inline-flex h-10 px-4 items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-soft">
@@ -62,7 +63,7 @@ export default function Landing() {
             A quieter place to <span className="text-primary">talk, focus, and learn</span>.
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed">
-            Axion6 brings together messaging, AI-powered learning, and focus tools — in one warm, minimal interface that respects your attention.
+            FernCove brings together messaging, AI-powered learning, and focus tools — in one warm, minimal interface that respects your attention.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link to="/auth" search={{ mode: "signup" }} className="inline-flex h-12 px-6 items-center gap-2 rounded-2xl bg-primary-gradient text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-soft">
@@ -101,7 +102,7 @@ export default function Landing() {
       <section className="px-6 md:px-10 pb-24 max-w-7xl mx-auto w-full">
         <div className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-hero p-12 md:p-16 text-center shadow-elevated">
           <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">Make room for what matters.</h2>
-          <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Join Axion6 — calm, premium, and built for people who care about their time.</p>
+          <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Join FernCove — calm, premium, and built for people who care about their time.</p>
           <Link to="/auth" search={{ mode: "signup" }} className="mt-8 inline-flex h-12 px-7 items-center gap-2 rounded-2xl bg-primary-gradient text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-soft">
             Start free <ArrowRight className="size-4" />
           </Link>

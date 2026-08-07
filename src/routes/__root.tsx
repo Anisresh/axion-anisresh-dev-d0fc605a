@@ -71,15 +71,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "google-site-verification", content: "mYMnUMDu4w1LT8Uy2IRElaoIv27wiDP5wlckUQCBgxA" },
-      { title: "Axion6 — Calm, premium communication & learning" },
-      { name: "description", content: "Axion6 is a calm, premium platform for messaging, focus, and AI-powered learning Created By Anisresh A R" },
+      { title: "FernCove — Calm, premium communication & learning" },
+      { name: "description", content: "FernCove is a calm, premium platform for messaging, focus, and AI-powered learning Created By Anisresh A R" },
       { name: "author", content: "Anisresh A R" },
-      { property: "og:title", content: "Axion6 — Calm, premium communication & learning" },
-      { property: "og:description", content: "Axion6 is a calm, premium platform for messaging, focus, and AI-powered learning Created By Anisresh A R" },
+      { property: "og:title", content: "FernCove — Calm, premium communication & learning" },
+      { property: "og:description", content: "FernCove is a calm, premium platform for messaging, focus, and AI-powered learning Created By Anisresh A R" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Axion6 — Calm, premium communication & learning" },
-      { name: "twitter:description", content: "Axion6 is a calm, premium platform for messaging, focus, and AI-powered learning Created By Anisresh A R" },
+      { name: "twitter:title", content: "FernCove — Calm, premium communication & learning" },
+      { name: "twitter:description", content: "FernCove is a calm, premium platform for messaging, focus, and AI-powered learning Created By Anisresh A R" },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/de81dbe9-665c-44d9-9715-1c9d712e855b" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/de81dbe9-665c-44d9-9715-1c9d712e855b" },
     ],
@@ -98,7 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark" data-palette="warm-cafe">
+    <html lang="en" className="dark" data-palette="fern">
       <head><HeadContent /></head>
       <body>
         {children}

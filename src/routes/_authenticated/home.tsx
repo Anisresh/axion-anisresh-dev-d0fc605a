@@ -7,7 +7,7 @@ import { Sparkles, MessageCircle, Users, Timer, GraduationCap, ArrowRight, Build
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/home")({
-  head: () => ({ meta: [{ title: "Home · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Home · FernCove" }] }),
   component: HomePage,
 });
 

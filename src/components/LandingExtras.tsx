@@ -47,7 +47,7 @@ function FloatingCard({ onReview }: { onReview: () => void }) {
             Built by a 13-year-old developer.
           </h3>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Axion is an independent passion project by Anisresh A R. If it made you smile or helped you, your feedback means more than you might imagine.
+            FernCove is an independent passion project by Anisresh A R. If it made you smile or helped you, your feedback means more than you might imagine.
           </p>
           <button
             onClick={() => { onReview(); setDismissed(true); }}
@@ -161,7 +161,7 @@ function PrivacyDialog({ open, onClose }: { open: boolean; onClose: () => void }
           <p><strong className="text-foreground">4. AI processing.</strong> Prompts you send to XAI are processed through an AI provider to generate replies. They are not used to train models on your behalf.</p>
           <p><strong className="text-foreground">5. Storage.</strong> Data is stored on secure cloud infrastructure with access controls and row-level security.</p>
           <p><strong className="text-foreground">6. Your control.</strong> You can request account deletion at any time by emailing the creator.</p>
-          <p><strong className="text-foreground">7. Updates.</strong> As Axion evolves this policy may change to reflect new features while maintaining transparency.</p>
+          <p><strong className="text-foreground">7. Updates.</strong> As FernCove evolves this policy may change to reflect new features while maintaining transparency.</p>
         </div>
       </motion.div>
     </div>
@@ -169,11 +169,11 @@ function PrivacyDialog({ open, onClose }: { open: boolean; onClose: () => void }
 }
 
 const faqs = [
-  { q: "Is Axion free?", a: "Yes. Many features are available for everyone, with future premium capabilities planned." },
-  { q: "Who built Axion?", a: "Axion was created by Anisresh A R, a student developer passionate about technology and design." },
+  { q: "Is FernCove free?", a: "Yes. Many features are available for everyone, with future premium capabilities planned." },
+  { q: "Who built FernCove?", a: "FernCove was created by Anisresh A R, a student developer passionate about technology and design." },
   { q: "Why did you build it?", a: "To explore how AI, communication, and productivity can exist in one elegant experience." },
   { q: "Is my data sold?", a: "No. User trust is more valuable than advertising revenue." },
-  { q: "How can I support the project?", a: "Share Axion with friends, leave a review, report bugs, and suggest new features." },
+  { q: "How can I support the project?", a: "Share FernCove with friends, leave a review, report bugs, and suggest new features." },
 ];
 
 const roadmap = [
@@ -203,7 +203,7 @@ export function LandingExtras() {
           </div>
           <h2 className="mt-4 text-3xl md:text-4xl font-semibold tracking-tight">Would you care to review this project?</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
-            Your thoughts go directly to my inbox and help shape the future of Axion. Whether it's a bug report, feature idea, or simply "this looks awesome," I read every message.
+            Your thoughts go directly to my inbox and help shape the future of FernCove. Whether it's a bug report, feature idea, or simply "this looks awesome," I read every message.
           </p>
         </motion.div>
         <div className="mt-6"><ReviewForm /></div>
@@ -216,10 +216,10 @@ export function LandingExtras() {
           <div className="size-11 rounded-2xl bg-primary/10 text-primary grid place-items-center mb-4"><Shield className="size-5" /></div>
           <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">Your privacy matters.</h2>
           <div className="mt-4 space-y-3 text-sm text-muted-foreground leading-relaxed">
-            <p>Axion was built to help people, not harvest data.</p>
+            <p>FernCove was built to help people, not harvest data.</p>
             <p>I do not sell your personal information or track you across the internet for advertising purposes.</p>
             <p>Any information you voluntarily provide is used only to improve the project or respond to your feedback.</p>
-            <p>As Axion evolves, this policy may be updated to reflect new features while maintaining transparency.</p>
+            <p>As FernCove evolves, this policy may be updated to reflect new features while maintaining transparency.</p>
             <p className="text-xs">Last Updated: {formatFixedDate(new Date())}</p>
           </div>
           <button onClick={() => setPrivacyOpen(true)} className="mt-5 inline-flex h-10 px-4 items-center gap-1.5 rounded-2xl border border-border bg-muted/40 hover:bg-muted text-sm font-medium transition-soft">
@@ -241,7 +241,7 @@ export function LandingExtras() {
             ))}
           </div>
           <p className="mt-5 text-muted-foreground leading-relaxed">
-            I love building technology that feels calm, intelligent, and beautifully designed. Axion started as an idea and became a project where I could learn real-world software development, UI/UX, deployment, and AI integration.
+            I love building technology that feels calm, intelligent, and beautifully designed. FernCove started as an idea and became a project where I could learn real-world software development, UI/UX, deployment, and AI integration.
           </p>
           <p className="mt-3 text-sm text-primary font-medium">This is only Version 1.</p>
         </motion.div>
@@ -325,7 +325,7 @@ export function LandingExtras() {
           Built with curiosity, countless cups of patience, and an unreasonable amount of debugging.
         </p>
         <p className="mt-2 text-sm font-medium">Created by Anisresh A R</p>
-        <p className="mt-1 text-xs text-muted-foreground">© 2026 Axion. All rights reserved.</p>
+        <p className="mt-1 text-xs text-muted-foreground">© 2026 FernCove. All rights reserved.</p>
       </section>
 
       <PrivacyDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />

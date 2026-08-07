@@ -7,7 +7,7 @@ import { Search, UserPlus, Check, Clock, Users as UsersIcon } from "lucide-react
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/users")({
-  head: () => ({ meta: [{ title: "Directory · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Directory · FernCove" }] }),
   component: UsersPage,
 });
 
@@ -67,7 +67,7 @@ function UsersPage() {
           </div>
           <div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Directory</h1>
-            <p className="text-sm text-muted-foreground">Everyone on Axion6. Send a friend request to start chatting privately.</p>
+            <p className="text-sm text-muted-foreground">Everyone on FernCove. Send a friend request to start chatting privately.</p>
           </div>
         </div>
       </motion.div>

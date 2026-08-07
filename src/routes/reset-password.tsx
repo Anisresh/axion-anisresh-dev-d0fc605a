@@ -7,7 +7,7 @@ import { Loader2, KeyRound, Coffee } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Set new password · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Set new password · FernCove" }] }),
   component: ResetPasswordPage,
 });
 
@@ -44,7 +44,7 @@ function ResetPasswordPage() {
       <header className="px-6 md:px-10 pt-6 max-w-7xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="size-9 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground shadow-glow"><Coffee className="size-4" /></div>
-          <span className="font-semibold tracking-tight text-lg">Axion6</span>
+          <span className="font-semibold tracking-tight text-lg">FernCove</span>
         </Link>
       </header>
       <main className="flex-1 grid place-items-center px-6 py-12">

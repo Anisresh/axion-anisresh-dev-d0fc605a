@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, Users, MessageCircle, UsersRound, GraduationCap, Sparkles, Timer, Settings, LogOut, Coffee, Compass, Building2 } from "lucide-react";
+import { Home, Users, MessageCircle, UsersRound, GraduationCap, Sparkles, Timer, Settings, LogOut, Leaf, Compass, Building2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,11 +43,11 @@ export function MiniSidebar() {
       onMouseLeave={() => setExpanded(false)}
       animate={{ width: expanded ? 232 : 72 }}
       transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-      className="fixed left-3 top-3 bottom-3 z-40 glass-strong rounded-[28px] shadow-elevated flex flex-col items-stretch py-4 px-2.5 overflow-hidden border border-border/60"
+      className="hidden md:flex fixed left-3 top-3 bottom-3 z-40 glass-strong rounded-[28px] shadow-elevated flex flex-col items-stretch py-4 px-2.5 overflow-hidden border border-border/60"
     >
       <Link to="/home" className="flex items-center gap-3 px-2.5 mb-5">
         <div className="size-11 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground shadow-glow shrink-0 tap">
-          <Coffee className="size-5" />
+          <Leaf className="size-5" />
         </div>
         <AnimatePresence>
           {expanded && (
@@ -57,7 +57,7 @@ export function MiniSidebar() {
               exit={{ opacity: 0, x: -8 }}
               className="font-semibold tracking-tight text-lg whitespace-nowrap"
             >
-              Axion6
+              FernCove
             </motion.span>
           )}
         </AnimatePresence>

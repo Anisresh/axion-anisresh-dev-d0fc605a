@@ -11,7 +11,7 @@ type WSType = Database["public"]["Enums"]["workspace_type"];
 type WSPrivacy = Database["public"]["Enums"]["workspace_privacy"];
 
 export const Route = createFileRoute("/_authenticated/workspaces/")({
-  head: () => ({ meta: [{ title: "Your Workspaces · Axion" }] }),
+  head: () => ({ meta: [{ title: "Your Workspaces · FernCove" }] }),
   component: WorkspacesIndex,
 });
 
@@ -107,7 +107,7 @@ function WorkspacesIndex() {
     <div className="min-h-screen ambient-grain">
       <header className="px-6 md:px-10 pt-6 pb-2 max-w-6xl mx-auto w-full flex items-center justify-between">
         <div>
-          <Link to="/home" className="text-xs text-muted-foreground hover:text-foreground transition-soft">← Back to Axion</Link>
+          <Link to="/home" className="text-xs text-muted-foreground hover:text-foreground transition-soft">← Back to FernCove</Link>
           <h1 className="mt-2 text-3xl md:text-4xl font-semibold tracking-tight">Your Workspaces</h1>
           <p className="mt-1 text-sm text-muted-foreground">One platform. Unlimited workspaces.</p>
         </div>
