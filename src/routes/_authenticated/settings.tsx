@@ -50,7 +50,7 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!settings) return;
-    applyPalette(settings.palette ?? "warm-cafe", settings.theme ?? "light");
+    applyPalette(settings.palette ?? "fern");
     applyBackground(settings.background_url);
   }, [settings?.theme, settings?.palette, settings?.background_url]);
 
