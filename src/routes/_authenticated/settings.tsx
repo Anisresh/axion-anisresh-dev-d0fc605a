@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { toast } from "sonner";
-import { Save, Upload, Sun, Moon, Loader2, Palette, Check, Building2, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { Save, Upload, Loader2, Palette, Check, Building2, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { PALETTES, applyPalette } from "@/lib/usePalette";
 import { BACKGROUNDS, applyBackground } from "@/lib/backgrounds";
@@ -133,8 +133,8 @@ function SettingsPage() {
       {settings && (
         <>
           <section className="mt-6 bg-card-gradient border border-border/60 rounded-3xl p-6 shadow-soft">
-            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2"><Palette className="size-5 text-primary" /> Color palette</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">Switch the entire café mood. Changes apply instantly.</p>
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2"><Palette className="size-5 text-primary" /> Theme</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">Eight handcrafted FernCove themes. Changes apply instantly.</p>
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {PALETTES.map((p) => {
                 const active = settings.palette === p.id;
