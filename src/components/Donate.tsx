@@ -9,9 +9,9 @@ const UPI_NUMBER = "9048088397";
 function upiLink(handle: string, amount?: string) {
   const params = new URLSearchParams({
     pa: handle,
-    pn: "Axion6",
+    pn: "FernCove",
     cu: "INR",
-    tn: "Supporting Axion6 — thank you",
+    tn: "Supporting FernCove — thank you",
   });
   if (amount) params.set("am", amount);
   return `upi://pay?${params.toString()}`;
@@ -32,13 +32,13 @@ export function Donate({ compact = false }: { compact?: boolean }) {
       <div className="absolute inset-0 ambient-grain -z-10 opacity-50" />
       <div className="inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft">
         <Heart className="size-3.5 text-primary fill-primary" />
-        <span>If Axion6 means something to you</span>
+        <span>If FernCove means something to you</span>
       </div>
       <h2 className={`mt-5 font-semibold tracking-tight ${compact ? "text-2xl" : "text-3xl md:text-5xl"}`}>
         A small gift, a <span className="text-primary">huge difference</span>.
       </h2>
       <p className={`mt-4 text-muted-foreground mx-auto leading-relaxed ${compact ? "text-sm max-w-md" : "text-base md:text-lg max-w-2xl"}`}>
-        Axion6 is built by one person, late at night, with a lot of coffee and a lot of care.
+        FernCove is built by one person, late at night, with a lot of coffee and a lot of care.
         It will always be free for everyone who needs a quieter place to talk, learn, and focus.
         If something here made your day a little better — a chat that felt calmer, a study set that
         finally clicked, a workspace that brought your people together — a small donation keeps

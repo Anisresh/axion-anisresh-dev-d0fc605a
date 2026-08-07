@@ -10,7 +10,7 @@ import { BACKGROUNDS, applyBackground } from "@/lib/backgrounds";
 import { Donate } from "@/components/Donate";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Settings · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Settings · FernCove" }] }),
   component: SettingsPage,
 });
 
@@ -83,7 +83,7 @@ function SettingsPage() {
     <div className="p-6 md:p-10 max-w-3xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <h1 className="text-4xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-2 text-muted-foreground">Make Axion6 yours.</p>
+        <p className="mt-2 text-muted-foreground">Make FernCove yours.</p>
       </motion.div>
 
       <section className="mt-6 bg-card-gradient border border-border/60 rounded-3xl p-6 shadow-soft">

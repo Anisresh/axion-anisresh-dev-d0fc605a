@@ -14,8 +14,8 @@ export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Sign in · Axion6" },
-      { name: "description", content: "Sign in or create your Axion6 account." },
+      { title: "Sign in · FernCove" },
+      { name: "description", content: "Sign in or create your FernCove account." },
     ],
   }),
   component: AuthPage,
@@ -52,7 +52,7 @@ function AuthPage() {
           },
         });
         if (error) { toast.error(error.message); return; }
-        toast.success("Welcome to Axion6— your calm café awaits ☕ Please check your inbox to verify your email.");
+        toast.success("Welcome to FernCove— your calm café awaits ☕ Please check your inbox to verify your email.");
         navigate({ to: "/home", replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -82,7 +82,7 @@ function AuthPage() {
       <header className="px-6 md:px-10 pt-6 max-w-7xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2.5 tap">
           <div className="size-10 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground shadow-glow"><Coffee className="size-5" /></div>
-          <span className="font-semibold tracking-tight text-lg">Axion6</span>
+          <span className="font-semibold tracking-tight text-lg">FernCove</span>
         </Link>
       </header>
 
@@ -137,14 +137,14 @@ function AuthPage() {
             )}
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
-              {mode === "signin" ? "New to Axion6?" : "Already have an account?"}{" "}
+              {mode === "signin" ? "New to FernCove?" : "Already have an account?"}{" "}
               <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="font-medium text-primary hover:underline">
                 {mode === "signin" ? "Create an account" : "Sign in"}
               </button>
             </p>
           </div>
 
-          {/* Axion Workspaces CTA */}
+          {/* FernCove Workspaces CTA */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -155,7 +155,7 @@ function AuthPage() {
             <div className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-[11px] font-medium text-muted-foreground">
               ✨ New
             </div>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight">Axion Workspaces</h2>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">FernCove Workspaces</h2>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               Create or join a powerful AI Workspace
             </p>
@@ -168,7 +168,7 @@ function AuthPage() {
             >
               Explore →
             </Link>
-            <p className="mt-3 text-[11px] text-muted-foreground/70">100% free · separate from Axion</p>
+            <p className="mt-3 text-[11px] text-muted-foreground/70">100% free · separate from FernCove</p>
           </motion.div>
         </motion.div>
 

@@ -10,9 +10,9 @@ import { Footer } from "@/components/Footer";
 export const Route = createFileRoute("/workspace")({
   head: () => ({
     meta: [
-      { title: "Axion Workspace — AI for Teachers, Schools, Teams & Businesses" },
+      { title: "FernCove Workspace — AI for Teachers, Schools, Teams & Businesses" },
       { name: "description", content: "An AI operating system for modern organizations. Manage teams, classrooms, projects, knowledge, and documents in one secure platform." },
-      { property: "og:title", content: "Axion Workspace" },
+      { property: "og:title", content: "FernCove Workspace" },
       { property: "og:description", content: "The AI Workspace for Modern Organizations." },
     ],
   }),
@@ -167,11 +167,11 @@ export default function WorkspacePage() {
       <header className="px-6 md:px-10 pt-6 flex items-center justify-between max-w-7xl mx-auto w-full">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="size-9 rounded-2xl bg-primary-gradient grid place-items-center text-primary-foreground font-bold shadow-glow">A6</div>
-          <span className="font-semibold tracking-tight text-lg">Axion Workspace</span>
+          <span className="font-semibold tracking-tight text-lg">FernCove Workspace</span>
         </Link>
         <nav className="flex items-center gap-2">
           <Link to="/" className="hidden sm:inline-flex h-10 px-4 items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-soft">
-            Back to Axion
+            Back to FernCove
           </Link>
           <Link to="/workspaces" className="inline-flex h-10 px-5 items-center rounded-2xl bg-primary-gradient text-primary-foreground text-sm font-medium shadow-glow hover:opacity-90 transition-soft">
             Get started
@@ -192,7 +192,7 @@ export default function WorkspacePage() {
           >
             <div className="inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft">
               <Building2 className="size-3.5 text-primary" />
-              <span>Axion Workspace</span>
+              <span>FernCove Workspace</span>
             </div>
             <h1 className="mt-6 text-4xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
               The AI Workspace for <span className="text-primary">Modern Organizations</span>.
@@ -205,10 +205,10 @@ export default function WorkspacePage() {
                 Get started — it's free <ArrowRight className="size-4" />
               </Link>
               <Link to="/" className="inline-flex h-12 px-6 items-center rounded-2xl glass border border-border/60 font-medium hover:bg-card transition-soft">
-                Back to Axion
+                Back to FernCove
               </Link>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground/80">100% free · No credit card · Separate from Axion</p>
+            <p className="mt-4 text-xs text-muted-foreground/80">100% free · No credit card · Separate from FernCove</p>
 
           </motion.div>
         </div>
@@ -356,7 +356,7 @@ export default function WorkspacePage() {
 
       {/* Knowledge Base */}
       <section className="px-6 md:px-10 pb-24 max-w-5xl mx-auto w-full">
-        <SectionHeader eyebrow="Your organization's brain" title="AI-Powered Knowledge Base" subtitle="Upload your documents. Axion answers questions using only your knowledge, with citations." />
+        <SectionHeader eyebrow="Your organization's brain" title="AI-Powered Knowledge Base" subtitle="Upload your documents. FernCove answers questions using only your knowledge, with citations." />
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-card-gradient border border-border/60 rounded-3xl p-7 shadow-soft">
             <div className="flex items-center gap-3 mb-3"><Brain className="size-5 text-primary" /><h3 className="font-semibold">Capabilities</h3></div>
@@ -368,7 +368,7 @@ export default function WorkspacePage() {
               <p className="text-sm">What is our leave policy?</p>
             </div>
             <div className="rounded-2xl bg-primary/10 p-4">
-              <p className="text-xs text-primary mb-1">Axion AI</p>
+              <p className="text-xs text-primary mb-1">FernCove AI</p>
               <p className="text-sm">According to the uploaded HR policy, employees receive 18 paid days per year...</p>
             </div>
             <div className="rounded-2xl bg-background/60 p-4">
@@ -376,7 +376,7 @@ export default function WorkspacePage() {
               <p className="text-sm">When is the biology exam?</p>
             </div>
             <div className="rounded-2xl bg-primary/10 p-4">
-              <p className="text-xs text-primary mb-1">Axion AI</p>
+              <p className="text-xs text-primary mb-1">FernCove AI</p>
               <p className="text-sm">According to the uploaded academic calendar, the biology exam is on March 14.</p>
             </div>
           </div>

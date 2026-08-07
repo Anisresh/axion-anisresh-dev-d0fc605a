@@ -8,7 +8,7 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/groups")({
-  head: () => ({ meta: [{ title: "Groups & Lobbies · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Groups & Lobbies · FernCove" }] }),
   component: GroupsPage,
 });
 

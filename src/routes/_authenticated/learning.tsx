@@ -8,7 +8,7 @@ import { Upload, Loader2, BookOpen, Sparkles, Check, X, Trash2 } from "lucide-re
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/learning")({
-  head: () => ({ meta: [{ title: "Learning · Axion6" }] }),
+  head: () => ({ meta: [{ title: "Learning · FernCove" }] }),
   component: LearningPage,
 });
 

@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/xai")({
-  head: () => ({ meta: [{ title: "XAI · Axion6" }] }),
+  head: () => ({ meta: [{ title: "XAI · FernCove" }] }),
   component: XaiPage,
 });
 

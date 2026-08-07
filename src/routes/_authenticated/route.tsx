@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { MiniSidebar } from "@/components/MiniSidebar";
+import { MobileBar } from "@/components/MobileBar";
 import { Footer } from "@/components/Footer";
 
 import { GlobalPlayerProvider } from "@/components/GlobalPlayer";
@@ -24,14 +25,15 @@ function AuthLayout() {
       <div className="min-h-screen flex bg-background">
         <MiniSidebar />
         <TopBar />
-        <div className="flex-1 ml-[92px] flex flex-col min-h-screen">
-          <main className="flex-1 pt-16">
+        <div className="flex-1 md:ml-[92px] flex flex-col min-h-screen">
+          <main className="flex-1 pt-16 pb-20 md:pb-0">
             <Outlet />
           </main>
           <Footer />
         </div>
 
       </div>
+      <MobileBar />
     </GlobalPlayerProvider>
   );
 }
