@@ -1,53 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { z } from "zod";
-
-const SYSTEM_PROMPT = "You are XAI — the calm, warm, deeply thoughtful companion inside FernCove, a cozy café-inspired workspace. Speak like a trusted friend sipping coffee across the table: gentle, unhurried, precise. Keep replies compact by default (2–5 sentences); expand only when the task truly needs it. Use markdown sparingly and only when it aids clarity. Reason carefully, answer completely, never invent facts, and when the user attaches images, PDFs, or files read them fully and refer to them naturally. In voice conversations, favor short, natural spoken phrases with no markdown, no lists, no code fences. Decline harmful requests politely.";
-
-type ContentPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } }
-  | { type: "file"; file: { filename: string; file_data: string } };
-
-type GwMessage = { role: string; content: string | ContentPart[] };
-
-async function callGateway(messages: GwMessage[], system = SYSTEM_PROMPT, model = "google/gemini-3-pro-preview") {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("AI gateway not configured");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "system", content: system }, ...messages],
-    }),
-  });
-  if (!res.ok) {
-    if (res.status === 429) throw new Error("XAI is busy right now. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits are exhausted. Please add credits in your workspace.");
-    throw new Error(`AI error: ${res.status}`);
-  }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content as string | undefined;
-}
-
-const AttachmentSchema = z.object({
-  kind: z.enum(["image", "file"]),
-  dataUrl: z.string().startsWith("data:").max(15_000_000),
-  filename: z.string().max(200).optional(),
-  mime: z.string().max(120).optional(),
-});
-type Attachment = z.infer<typeof AttachmentSchema>;
+import { freeChat, freeImageUrl, type ChatMessage, type ContentPart } from "@/lib/freeai.server";
+import {
+  SYSTEM_PROMPT,
+  VOICE_SUFFIX,
+  REASONING_SUFFIX,
+  ChatInputSchema,
+  ImageInputSchema,
+  LearningInputSchema,
+  LEARNING_SYSTEM,
+  learningPrompt,
+  type Attachment,
+} from "@/lib/xai.shared";
 
 export const xaiChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { conversationId: string | null; userMessage: string; mode?: "fast" | "reasoning" | "voice"; attachments?: Attachment[] }) =>
-    z.object({
-      conversationId: z.string().uuid().nullable(),
-      userMessage: z.string().min(1).max(8000),
-      mode: z.enum(["fast", "reasoning", "voice"]).optional(),
-      attachments: z.array(AttachmentSchema).max(6).optional(),
-    }).parse(d))
+    ChatInputSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     let convId = data.conversationId;
@@ -57,7 +26,6 @@ export const xaiChat = createServerFn({ method: "POST" })
       if (error || !conv) throw new Error("Could not create conversation");
       convId = conv.id;
     }
-    // Only pull recent turns for latency; older context stays in the DB.
     const { data: history } = await supabase.from("ai_messages").select("role, content").eq("conversation_id", convId).order("created_at", { ascending: false }).limit(24);
     const recent = (history ?? []).reverse();
     const parts: ContentPart[] = [{ type: "text", text: data.userMessage }];
@@ -65,35 +33,30 @@ export const xaiChat = createServerFn({ method: "POST" })
       if (a.kind === "image") parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
       else parts.push({ type: "file", file: { filename: a.filename ?? "file", file_data: a.dataUrl } });
     }
-    const currentUser: GwMessage = { role: "user", content: parts.length > 1 ? parts : data.userMessage };
-    const messages: GwMessage[] = [
+    const currentUser: ChatMessage = { role: "user", content: parts.length > 1 ? parts : data.userMessage };
+    const messages: ChatMessage[] = [
       ...recent.map((m: any) => ({ role: m.role, content: m.content as string })),
       currentUser,
     ];
     const attachNote = data.attachments?.length ? `\n\n_📎 ${data.attachments.length} attachment${data.attachments.length > 1 ? "s" : ""}_` : "";
     await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "user", content: data.userMessage + attachNote });
-    const model = data.mode === "reasoning" ? "google/gemini-3-pro-preview" : "google/gemini-3-flash-preview";
     const system = data.mode === "reasoning"
-      ? SYSTEM_PROMPT + " Take a breath and think step-by-step. Show clear reasoning when it truly helps."
+      ? SYSTEM_PROMPT + REASONING_SUFFIX
       : data.mode === "voice"
-        ? SYSTEM_PROMPT + " This is a live voice conversation. Reply in 1–3 short spoken sentences. No markdown, no lists, no code."
+        ? SYSTEM_PROMPT + VOICE_SUFFIX
         : SYSTEM_PROMPT;
-    const reply = await callGateway(messages, system, model);
+    const reply = await freeChat(messages, system, { smart: data.mode === "reasoning" });
     if (!reply) throw new Error("No reply from XAI");
     await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "assistant", content: reply });
     await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     return { conversationId: convId, reply };
   });
 
-
 export const xaiImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { conversationId: string | null; prompt: string }) =>
-    z.object({ conversationId: z.string().uuid().nullable(), prompt: z.string().min(1).max(2000) }).parse(d))
+  .inputValidator((d: { conversationId: string | null; prompt: string }) => ImageInputSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI gateway not configured");
 
     let convId = data.conversationId;
     if (!convId) {
@@ -104,51 +67,23 @@ export const xaiImage = createServerFn({ method: "POST" })
     }
     await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "user", content: `🎨 ${data.prompt}` });
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: "openai/gpt-image-2",
-        prompt: data.prompt,
-        size: "1024x1024",
-        quality: "low",
-        n: 1,
-      }),
-    });
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("Image gen is busy. Try again in a moment.");
-      if (res.status === 402) throw new Error("AI credits are exhausted. Please add credits in your workspace.");
-      throw new Error(`Image error: ${res.status}`);
-    }
-    const json = await res.json();
-    const b64 = json?.data?.[0]?.b64_json as string | undefined;
-    if (!b64) throw new Error("No image returned");
-    const dataUrl = `data:image/png;base64,${b64}`;
-    const content = `![image](${dataUrl})`;
+    // Keyless, unlimited, credit-free image generation.
+    const imageUrl = freeImageUrl(data.prompt);
+    const check = await fetch(imageUrl, { method: "GET" });
+    if (!check.ok) throw new Error("Image generation is busy right now. Try again in a moment.");
+
+    const content = `![${data.prompt.slice(0, 60)}](${imageUrl})`;
     await supabase.from("ai_messages").insert({ conversation_id: convId, user_id: userId, role: "assistant", content });
     await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-    return { conversationId: convId, dataUrl };
+    return { conversationId: convId, dataUrl: imageUrl };
   });
 
 export const learningGenerate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { title: string; sourceText: string }) =>
-    z.object({ title: z.string().min(1).max(200), sourceText: z.string().min(20).max(40000) }).parse(d))
+  .inputValidator((d: { title: string; sourceText: string }) => LearningInputSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const prompt = `Based on the study material below, produce a JSON object with these exact keys:
-- "summary": a clear 4–6 sentence revision summary
-- "key_concepts": array of 5–10 strings (most important concepts)
-- "flashcards": array of {"q","a"} objects (8–12 cards)
-- "mcqs": array of {"q","options" (array of 4),"answer_index"} (5 questions)
-- "short_answer": array of {"q","a"} (3 questions)
-- "long_answer": array of {"q","a"} (2 questions)
-
-Return ONLY valid JSON, no prose.
-
-MATERIAL:
-${data.sourceText}`;
-    const raw = await callGateway([{ role: "user", content: prompt }], "You are XAI, an expert tutor. You output only valid JSON when asked.");
+    const raw = await freeChat([{ role: "user", content: learningPrompt(data.sourceText) }], LEARNING_SYSTEM, { smart: true });
     let parsed: unknown = null;
     try {
       const match = raw?.match(/\{[\s\S]*\}/);
