@@ -1,80 +1,84 @@
-import { createParser } from "eventsource-parser";
-import { supabase } from "@/integrations/supabase/client";
+// Free, unlimited, offline text-to-speech using the browser's built-in
+// speechSynthesis engine. No API keys, no credits, no network calls.
 
-let currentCtx: AudioContext | null = null;
-let currentAbort: AbortController | null = null;
+let currentUtterance: SpeechSynthesisUtterance | null = null;
+
+function pickVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !window.speechSynthesis) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  // Prefer natural-sounding local English voices.
+  const preferred = [
+    /google (uk|us) english/i,
+    /samantha/i,
+    /natural/i,
+    /neural/i,
+    /daniel/i,
+    /karen/i,
+  ];
+  for (const re of preferred) {
+    const hit = voices.find((v) => re.test(v.name) && v.lang.startsWith("en"));
+    if (hit) return hit;
+  }
+  return voices.find((v) => v.lang.startsWith("en")) ?? voices[0];
+}
 
 export function stopSpeaking() {
-  currentAbort?.abort();
-  currentAbort = null;
-  if (currentCtx) {
-    currentCtx.close().catch(() => {});
-    currentCtx = null;
+  currentUtterance = null;
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
   }
 }
 
-export async function streamSpeak(text: string, voice = "alloy"): Promise<void> {
+/** Strips markdown so speech sounds natural. */
+function clean(text: string) {
+  return text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/```[\s\S]*?```/g, " code block ")
+    .replace(/[*_`#>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function speechSupported() {
+  return typeof window !== "undefined" && !!window.speechSynthesis;
+}
+
+export async function streamSpeak(text: string, _voice?: string): Promise<void> {
+  if (!speechSupported()) throw new Error("Speech is not supported in this browser");
   stopSpeaking();
-  const { data: sess } = await supabase.auth.getSession();
-  const token = sess.session?.access_token;
-  if (!token) throw new Error("Not signed in");
 
-  const ctx = new AudioContext({ sampleRate: 24000 });
-  currentCtx = ctx;
-  if (ctx.state === "suspended") await ctx.resume().catch(() => {});
-  let playhead = 0;
-  let pending = new Uint8Array(0);
+  const spoken = clean(text).slice(0, 4000);
+  if (!spoken) return;
 
-  const playChunk = (incoming: Uint8Array) => {
-    const bytes = new Uint8Array(pending.length + incoming.length);
-    bytes.set(pending);
-    bytes.set(incoming, pending.length);
-    const usable = bytes.length - (bytes.length % 2);
-    pending = bytes.slice(usable);
-    if (usable === 0) return;
-    const samples = new Int16Array(bytes.buffer, 0, usable / 2);
-    const floats = Float32Array.from(samples, (s) => s / 32768);
-    const buffer = ctx.createBuffer(1, floats.length, 24000);
-    buffer.copyToChannel(floats, 0);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    if (playhead === 0) playhead = ctx.currentTime + 0.05;
-    else playhead = Math.max(playhead, ctx.currentTime);
-    source.start(playhead);
-    playhead += buffer.duration;
-  };
-
-  const abort = new AbortController();
-  currentAbort = abort;
-  const res = await fetch("/api/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ text, voice }),
-    signal: abort.signal,
-  });
-  if (!res.ok || !res.body) throw new Error(`TTS failed: ${res.status}`);
-
-  const parser = createParser({
-    onEvent(event) {
-      let payload: { type: string; audio?: string };
-      try { payload = JSON.parse(event.data); } catch { return; }
-      if (payload.type !== "speech.audio.delta" || !payload.audio) return;
-      const binary = atob(payload.audio);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      playChunk(bytes);
-    },
-  });
-
-  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      parser.feed(value);
-    }
-  } finally {
-    reader.cancel().catch(() => {});
+  // Voice list can load asynchronously on first use.
+  if (!window.speechSynthesis.getVoices().length) {
+    await new Promise<void>((resolve) => {
+      const t = setTimeout(resolve, 600);
+      window.speechSynthesis.addEventListener(
+        "voiceschanged",
+        () => { clearTimeout(t); resolve(); },
+        { once: true },
+      );
+    });
   }
+
+  return new Promise<void>((resolve, reject) => {
+    const u = new SpeechSynthesisUtterance(spoken);
+    const v = pickVoice();
+    if (v) u.voice = v;
+    u.lang = v?.lang ?? "en-US";
+    u.rate = 1.05;
+    u.pitch = 1;
+    u.volume = 1;
+    u.onend = () => { if (currentUtterance === u) currentUtterance = null; resolve(); };
+    u.onerror = (e) => {
+      if (currentUtterance === u) currentUtterance = null;
+      if ((e as SpeechSynthesisErrorEvent).error === "interrupted" || (e as SpeechSynthesisErrorEvent).error === "canceled") resolve();
+      else reject(new Error("Speech failed"));
+    };
+    currentUtterance = u;
+    window.speechSynthesis.speak(u);
+  });
 }
