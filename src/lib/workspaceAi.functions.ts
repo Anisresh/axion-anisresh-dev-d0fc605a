@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { freeChat } from "@/lib/freeai.server";
 
 export const workspaceAiChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -53,20 +54,10 @@ ${JSON.stringify(ctx, null, 2)}`;
       workspace_id: data.workspaceId, user_id: userId, role: "user", content: data.userMessage,
     });
 
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI gateway not configured");
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-      body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages }),
-    });
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("AI is busy. Try again in a moment.");
-      if (res.status === 402) throw new Error("AI credits exhausted.");
-      throw new Error(`AI error: ${res.status}`);
-    }
-    const json = await res.json();
-    const reply = json.choices?.[0]?.message?.content as string | undefined;
+    const reply = await freeChat(
+      messages.slice(1).map((m) => ({ role: m.role, content: m.content })),
+      SYSTEM,
+    );
     if (!reply) throw new Error("No reply from AI");
 
     await supabase.from("workspace_ai_messages").insert({
